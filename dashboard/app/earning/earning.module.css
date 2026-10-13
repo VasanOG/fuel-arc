@@ -1,0 +1,93 @@
+/*
+ * The Earning page.
+ *
+ * Deliberately small. The table, panels and status pills are the shared ones
+ * from globals.css — a new page that restyles what it already has is how two
+ * ledgers end up looking like two products.
+ */
+
+/*
+ * The customer's own origin, under the label it is known by in the books.
+ *
+ * The same device as .team under an agent name and .booksTo under a date: a
+ * subordinate fact hanging off the cell it qualifies, rather than a column of
+ * its own. It is a URL, so it gets the monospace treatment and is allowed to
+ * break — a long origin must not push the table wider than the viewport.
+ */
+.origin {
+  display: block;
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: var(--t-micro);
+  color: var(--ink-40);
+  margin-top: 0.1rem;
+  overflow-wrap: anywhere;
+}
+
+/*
+ * Why an endpoint is not live yet, in the API's own words.
+ *
+ * Under the state pill rather than beside it: the sentence is long enough that
+ * inline placement would set the row height from the narrowest column.
+ */
+.blocker {
+  display: block;
+  font-size: var(--t-micro);
+  color: var(--ink-60);
+  margin-top: var(--s-2);
+  max-width: 28ch;
+  white-space: normal;
+}
+
+/*
+ * Receipts on this endpoint that never resolved.
+ *
+ * Carries the warning colour, because this one sits next to a revenue figure
+ * that looks fine. It is never the only signal — the same rows are listed in
+ * full above the table, where they cannot be mistaken for a footnote.
+ */
+.stuck {
+  display: block;
+  font-size: var(--t-micro);
+  color: var(--bad-ink);
+  margin-top: 0.1rem;
+  white-space: normal;
+}
+
+/* ---- the unresolved list ------------------------------------------------ */
+
+.attention {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.attention > li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--s-2) var(--s-3);
+  align-items: baseline;
+  padding: var(--s-3) var(--s-4);
+  border-bottom: 1px solid var(--rule);
+}
+
+.attention > li:last-child {
+  border-bottom: none;
+}
+
+.attentionWhat {
+  font-weight: 600;
+}
+
+/*
+ * Spans both columns so the explanation starts at the left edge rather than
+ * indenting under the amount, which made the sentences look like captions.
+ */
+.attentionWhy {
+  grid-column: 1 / -1;
+  font-size: var(--t-small);
+  color: var(--ink-60);
+}
+
+.agentLink {
+  color: inherit;
+}

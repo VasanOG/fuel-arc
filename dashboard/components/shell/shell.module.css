@@ -1,0 +1,373 @@
+/*
+ * The application shell.
+ *
+ * The nav deliberately reuses the ledger's typographic devices rather than
+ * inventing new ones: hairline rules, small tracked uppercase labels, 2px
+ * radii, and a solid rule marking the active item instead of a filled rounded
+ * pill. A pill would have read as generic dashboard chrome; a rule reads as the
+ * same document system the journal entry is set in, which is the point — Fuel's
+ * argument is that it produces records, and the furniture should not contradict
+ * the record.
+ *
+ * Everything here is quiet on purpose. The ledger is the one loud thing in this
+ * product and it stays that way.
+ */
+
+.app {
+  display: grid;
+  min-height: 100vh;
+  grid-template-rows: auto 1fr;
+}
+
+.skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 10;
+  padding: var(--s-2) var(--s-4);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: var(--t-small);
+  font-weight: 600;
+  border-radius: 0 0 var(--r-sm) 0;
+}
+
+.skip:focus {
+  left: 0;
+}
+
+/* ---- the rail ----------------------------------------------------------- */
+
+.nav {
+  background: var(--shell-deep);
+  color: var(--shell-text);
+  border-bottom: 1px solid var(--shell-line);
+}
+
+.brandRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding: var(--s-4);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  color: var(--shell-text-strong);
+  text-decoration: none;
+  font-size: var(--t-lead);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.toggle {
+  border: 1px solid var(--shell-line);
+  border-radius: var(--r-sm);
+  background: var(--shell-raised);
+  color: var(--shell-text);
+  font-size: var(--t-small);
+  padding: var(--s-1) var(--s-3);
+}
+
+.toggle:hover {
+  color: var(--shell-text-strong);
+  border-color: var(--shell-text-dim);
+}
+
+.sections {
+  padding: 0 var(--s-3) var(--s-4);
+}
+
+.group {
+  margin-bottom: var(--s-5);
+}
+
+.group:last-child {
+  margin-bottom: 0;
+}
+
+.groupLabel {
+  font-size: var(--t-micro);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-eyebrow);
+  color: var(--shell-text-dim);
+  margin: 0 0 var(--s-2);
+  padding: 0 var(--s-3);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  font-size: var(--t-body);
+  text-decoration: none;
+  color: var(--shell-text);
+  border-left: 2px solid transparent;
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+}
+
+.item:hover {
+  color: var(--shell-text-strong);
+  background: var(--shell);
+}
+
+.itemActive {
+  color: var(--shell-text-strong);
+  background: var(--shell-raised);
+  border-left-color: var(--shell-accent);
+  font-weight: 500;
+}
+
+/*
+ * A section with no page behind it yet. Rendered as text rather than a link, so
+ * it cannot be clicked into a 404 and is not announced as a link that goes
+ * nowhere. The information architecture is honest about being ahead of the
+ * build.
+ */
+.itemSoon {
+  color: var(--shell-text-dim);
+  cursor: default;
+}
+
+.soon {
+  font-size: var(--t-micro);
+  text-transform: lowercase;
+  letter-spacing: var(--track-label);
+  color: var(--shell-text-dim);
+}
+
+/* ---- content ------------------------------------------------------------ */
+
+.main {
+  background: var(--canvas);
+  min-width: 0;
+}
+
+.content {
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding: var(--s-6) var(--s-4) var(--s-7);
+}
+
+/* ---- header ------------------------------------------------------------- */
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-4);
+  flex-wrap: wrap;
+  padding-bottom: var(--s-4);
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: var(--s-6);
+}
+
+.title {
+  font-size: var(--t-title);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.description {
+  color: var(--ink-60);
+  font-size: var(--t-body);
+  margin: var(--s-1) 0 0;
+  max-width: 52ch;
+}
+
+/* ---- desktop ------------------------------------------------------------ */
+
+@media (max-width: 59.999rem) {
+  .sections {
+    display: none;
+  }
+  .sectionsOpen {
+    display: block;
+  }
+}
+
+@media (min-width: 60rem) {
+  .app {
+    grid-template-columns: var(--nav-width) 1fr;
+    grid-template-rows: 1fr;
+  }
+  .nav {
+    border-bottom: none;
+    border-right: 1px solid var(--shell-line);
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+    /* A column, so the environment badge's `margin-top: auto` can sit it at the
+       foot of the sidebar rather than immediately under the last nav item. On
+       narrow screens the nav is an ordinary block and the badge simply follows
+       the sections, which is the right place for it there. */
+    display: flex;
+    flex-direction: column;
+  }
+  .brandRow {
+    padding: var(--s-5) var(--s-4) var(--s-4);
+    border-bottom: 1px solid var(--shell-line);
+    margin-bottom: var(--s-5);
+  }
+  .toggle {
+    display: none;
+  }
+  .content {
+    padding: var(--s-6) var(--s-6) var(--s-7);
+  }
+}
+
+/* ---- the environment badge ---------------------------------------------- */
+
+/*
+ * Below the sections and outside the mobile disclosure, so what Fuel is pointed
+ * at is visible whether the menu is open or shut.
+ *
+ * `min-height` on the shared class, not on the loaded states: the skeleton and
+ * all three verdicts occupy identical space, so the badge resolving never moves
+ * a navigation link out from under a cursor already heading for it.
+ */
+.navFoot {
+  margin-top: auto;
+  padding: var(--s-4);
+  border-top: 1px solid var(--shell-line);
+}
+
+.env {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0;
+  min-height: 2.5rem;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--shell-line);
+  border-radius: var(--r-sm);
+}
+
+.envLabel {
+  font-size: var(--t-micro);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--shell-text-dim);
+}
+
+.envValue {
+  font-size: var(--t-small);
+  font-weight: 500;
+  color: var(--shell-text-strong);
+}
+
+/* The expected case. Factual, and it does not shout. */
+.envSandbox {
+  border-color: var(--shell-line);
+}
+
+/*
+ * The only state on this screen where a mistake costs real money, so it is the
+ * only badge that is filled rather than outlined. Nothing else in the shell is
+ * allowed this much weight.
+ */
+.envProduction {
+  background: var(--shell-danger-bg);
+  border-color: var(--shell-danger-bg);
+}
+
+.envProduction .envLabel {
+  color: var(--shell-danger-ink);
+  opacity: 0.85;
+}
+
+.envProduction .envValue {
+  color: var(--shell-danger-ink);
+}
+
+/* A real verdict — the server reached a constant it does not recognise — and
+   not the same thing as Fuel being unreachable, which renders nothing at all. */
+.envUnknown {
+  border-color: var(--shell-warn);
+}
+
+.envUnknown .envValue {
+  color: var(--shell-warn);
+}
+
+/* Reserved space, no claim, nothing announced. */
+.envPending {
+  border-color: transparent;
+}
+
+/* ---- who is signed in --------------------------------------------------- */
+
+.viewer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  /* Email, meta line, handle line and sign-out: the skeleton reserves all
+     four, so the nav does not grow when the name arrives. */
+  min-height: 6.25rem;
+  margin-bottom: var(--s-3);
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--shell-line);
+  border-radius: var(--r-sm);
+}
+
+.viewerEmail {
+  margin: 0;
+  font-size: var(--t-small);
+  font-weight: 500;
+  color: var(--shell-text-strong);
+  /* Wraps rather than truncating — see ViewerBadge for why a shortened
+     address beside an Approve button is a hazard and not a tidiness win. */
+  overflow-wrap: anywhere;
+}
+
+.viewerMeta {
+  margin: 0;
+  font-size: var(--t-micro);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--shell-text-dim);
+}
+
+.viewerHandle {
+  margin: 0;
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: var(--t-micro);
+  color: var(--shell-text-dim);
+  overflow-wrap: anywhere;
+}
+
+.signOut {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--t-micro);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--shell-accent);
+}
+
+.signOut:hover {
+  color: var(--shell-text-strong);
+}
+
+.viewerPending {
+  border-color: transparent;
+}

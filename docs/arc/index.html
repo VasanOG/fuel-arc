@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fuel on Arc</title>
+<meta name="description" content="An AI agent's real USDC payments on Arc, each one checked by Fuel's spend controls first, with explorer links.">
+<style>
+  :root { --bg:#fafaf7; --ink:#14171f; --muted:#5b6170; --line:#dcdcd4; --paid:#0b6b4f; --held:#9a5b00; --refused:#a12a2a; --card:#ffffff; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0f1218; --ink:#e8e9ec; --muted:#9aa0ad; --line:#2a2f3a; --paid:#4cc79c; --held:#e2a04a; --refused:#ef7a7a; --card:#161a22; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 1.7rem; line-height:1.25; margin: 0 0 8px; }
+  h2 { font-size: 1.05rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 40px 0 12px; }
+  p { max-width: 70ch; }
+  .lead { font-size: 1.1rem; }
+  .note { border-left: 3px solid var(--held); background: var(--card); padding: 12px 16px; max-width: 75ch; }
+  .facts { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .fact { background:var(--card); border:1px solid var(--line); padding: 12px 14px; }
+  .fact b { display:block; font-size:1.4rem; }
+  .fact span { color:var(--muted); font-size:.9rem; }
+  .wrap { overflow-x:auto; border:1px solid var(--line); background:var(--card); }
+  table { border-collapse: collapse; width:100%; font-size:.92rem; }
+  th, td { text-align:left; padding: 8px 10px; border-bottom:1px solid var(--line); vertical-align: top; }
+  th { color:var(--muted); font-weight:600; white-space:nowrap; }
+  td.num { font-variant-numeric: tabular-nums; white-space:nowrap; }
+  tr.paid td:nth-child(4) { color: var(--paid); }
+  tr.held td:nth-child(4) { color: var(--held); }
+  tr.refused td:nth-child(4) { color: var(--refused); }
+  code { font-size: .85em; word-break: break-all; }
+  a { color: inherit; }
+  ul { padding-left: 20px; max-width: 75ch; }
+  .live { color: var(--paid); font-size: .85rem; white-space: nowrap; }
+  .live-panel { color: var(--muted); font-size: .92rem; }
+</style>
+</head>
+<body>
+<main>
+<h1>Fuel on Arc: governed agent payments on Arc mainnet</h1>
+<p class="lead">Fuel is a wallet and spend-control layer for AI agents. Here, one agent pays for items in real USDC on Arc mainnet, and every payment passes Fuel's controls first: spend caps, a hold for unusual amounts that a person must approve, a rate limit, a freeze switch, and a ledger of every attempt.</p>
+<p class="note"><strong>Who is who.</strong> The agent, its wallet, the shop and the shop's wallet are all mine (the founder of Fuel). Every payment below moves my own USDC from my agent's wallet to my shop's wallet. The shop is a three-item demo I operate so the controls have something real to pay for. No customer funds are involved.</p>
+
+<h2>At a glance</h2>
+<div class="facts">
+  <div class="fact"><b>9</b><span>payments that moved money ($0.022 in total)</span></div>
+  <div class="fact"><b>2</b><span>held for a person to approve (2 approved and then paid)</span></div>
+  <div class="fact"><b>3</b><span>refused before anything was signed</span></div>
+  
+  <div class="fact"><b>$0.01 / $5.00</b><span>hard limits in code: per payment, and in total over the agent's life</span></div>
+</div>
+
+<h2>Wallets and network</h2>
+<p id="live-status" class="live-panel">Checking Arc mainnet from your browser…</p>
+<ul>
+  <li>Agent wallet: <a href="https://explorer.arc.io/address/0xa963C45e1fc634036EE53FA8DAF712B83F05bC4f"><code>0xa963C45e1fc634036EE53FA8DAF712B83F05bC4f</code></a> <span class="live" data-balance="0xa963C45e1fc634036EE53FA8DAF712B83F05bC4f"></span></li>
+  <li>Shop wallet (mine): <a href="https://explorer.arc.io/address/0x3ddC6a2d414e658EdC3462fF97F963C81Fca64e7"><code>0x3ddC6a2d414e658EdC3462fF97F963C81Fca64e7</code></a> <span class="live" data-balance="0x3ddC6a2d414e658EdC3462fF97F963C81Fca64e7"></span></li>
+  <li>Network: Arc mainnet, chain id 5042. USDC at <code>0x3600000000000000000000000000000000000000</code>; Arc charges its network fees in USDC too, paid here by the shop's wallet when it settles each payment.</li>
+</ul>
+
+<h2>From Fuel's ledger</h2>
+<p>Every attempt Fuel recorded for this agent, read from the demo instance's database. A paid row links to its transaction on the Arc explorer; a held or refused row has no transaction, because Fuel stopped it before a signature existed.</p>
+<div class="wrap"><table>
+<thead><tr><th>When</th><th>Item</th><th>Amount</th><th>Fuel's decision</th><th>On chain</th></tr></thead>
+<tbody>
+<tr class="paid"><td>2026-10-12 14:10:12 UTC</td><td>basic</td><td class="num">$0.001</td><td>Paid</td><td><a href="https://explorer.arc.io/tx/0x198c5e4b4b12b56c490c15bbdd683452d263e74dabe3f18d799506b8d2015dfe">0x198c5e4b…015dfe</a> <span class="live" data-tx="0x198c5e4b4b12b56c490c15bbdd683452d263e74dabe3f18d799506b8d2015dfe"></span></td></tr>
+<tr class="paid"><td>2026-10-12 14:19:41 UTC</td><td>basic</td><td class="num">$0.001</td><td>Paid</td><td><a href="https://explorer.arc.io/tx/0x7acf73743cb6ca582dbe016a66f653273e5592cbf8ab76382e92fe7af6f2e016">0x7acf7374…f2e016</a> <span class="live" data-tx="0x7acf73743cb6ca582dbe016a66f653273e5592cbf8ab76382e92fe7af6f2e016"></span></td></tr>
+<tr class="paid"><td>2026-10-12 14:19:44 UTC</td><td>basic</td><td class="num">$0.001</td><td>Paid</td><td><a href="https://explorer.arc.io/tx/0xb57d03ec1de7f0a937d844f243b29b9aeac231e61a7fb627ff42e1aab7852fd2">0xb57d03ec…852fd2</a> <span class="live" data-tx="0xb57d03ec1de7f0a937d844f243b29b9aeac231e61a7fb627ff42e1aab7852fd2"></span></td></tr>
+<tr class="paid"><td>2026-10-12 14:19:46 UTC</td><td>basic</td><td class="num">$0.001</td><td>Paid</td><td><a href="https://explorer.arc.io/tx/0x7003a7c35b054f82e885a91d9101fdf7271f1f5154ca008d4e880dda243c1c78">0x7003a7c3…3c1c78</a> <span class="live" data-tx="0x7003a7c35b054f82e885a91d9101fdf7271f1f5154ca008d4e880dda243c1c78"></span></td></tr>
+<tr class="paid"><td>2026-10-12 14:19:48 UTC</td><td>basic</td><td class="num">$0.001</td><td>Paid</td><td><a href="https://explorer.arc.io/tx/0x22896ee97eef3067f4d11e3ba704b723538995a3bd11885c36232958b7c74aa6">0x22896ee9…c74aa6</a> <span class="live" data-tx="0x22896ee97eef3067f4d11e3ba704b723538995a3bd11885c36232958b7c74aa6"></span></td></tr>
+<tr class="paid"><td>2026-10-12 14:19:50 UTC</td><td>basic</td><td class="num">$0.001</td><td>Paid</td><td><a href="https://explorer.arc.io/tx/0x32b83733a74b357b65a657f3a3be105b367b09ee8a16c8d9cb7aadcb3a1b3cba">0x32b83733…1b3cba</a> <span class="live" data-tx="0x32b83733a74b357b65a657f3a3be105b367b09ee8a16c8d9cb7aadcb3a1b3cba"></span></td></tr>
+<tr class="held"><td>2026-10-12 14:19:53 UTC</td><td>unusual</td><td class="num">$0.005</td><td>Held for approval: an unusual amount for this agent</td><td>stopped before signing; nothing on chain</td></tr>
+<tr class="paid"><td>2026-10-12 14:19:53 UTC</td><td>unusual</td><td class="num">$0.005</td><td>Paid after approval (operator key, 2026-10-12 14:19:53 UTC)</td><td><a href="https://explorer.arc.io/tx/0x0f478b9359f631d5fe92c536d5930c5cff4a61594a7a04f8c126e76a0bebfd48">0x0f478b93…ebfd48</a> <span class="live" data-tx="0x0f478b9359f631d5fe92c536d5930c5cff4a61594a7a04f8c126e76a0bebfd48"></span></td></tr>
+<tr class="paid"><td>2026-10-12 14:19:56 UTC</td><td>basic</td><td class="num">$0.001</td><td>Paid</td><td><a href="https://explorer.arc.io/tx/0x2aced4427e2d82dc8ccbd625391f6a1e91facba9d910090aa5d699e2f25f25ec">0x2aced442…5f25ec</a> <span class="live" data-tx="0x2aced4427e2d82dc8ccbd625391f6a1e91facba9d910090aa5d699e2f25f25ec"></span></td></tr>
+<tr class="refused"><td>2026-10-12 14:19:58 UTC</td><td>ceiling</td><td class="num">$0.01</td><td>Refused: too many payments too quickly</td><td>stopped before signing; nothing on chain</td></tr>
+<tr class="held"><td>2026-10-12 14:21:04 UTC</td><td>ceiling</td><td class="num">$0.01</td><td>Held for approval: an unusual amount for this agent</td><td>stopped before signing; nothing on chain</td></tr>
+<tr class="paid"><td>2026-10-12 14:21:04 UTC</td><td>ceiling</td><td class="num">$0.01</td><td>Paid after approval (operator key, 2026-10-12 14:21:04 UTC)</td><td><a href="https://explorer.arc.io/tx/0x0af7732123e54814b2d4c434af342ecd5e843f820564eecdc86b2d95c722f30b">0x0af77321…22f30b</a> <span class="live" data-tx="0x0af7732123e54814b2d4c434af342ecd5e843f820564eecdc86b2d95c722f30b"></span></td></tr>
+<tr class="refused"><td>2026-10-12 14:21:07 UTC</td><td>basic</td><td class="num">$0.001</td><td>Refused: over the agent's own cap</td><td>stopped before signing; nothing on chain</td></tr>
+</tbody></table></div>
+
+<h2>From the demo runner's log (not the ledger)</h2>
+<p>Some refusals happen before Fuel reserves anything, so they leave no row in the ledger: a frozen agent is turned away at the door, and Fuel only counts the attempt. These come from the log kept by the script that drove the demo, not from Fuel's ledger.</p>
+<div class="wrap"><table>
+<thead><tr><th>When</th><th>Item</th><th>What happened</th></tr></thead>
+<tbody>
+<tr class="refused"><td>2026-10-12 14:21:07 UTC</td><td>basic</td><td>Refused: the agent was frozen by the operator (HTTP 423)</td></tr>
+</tbody></table></div>
+
+<h2>How the lock works</h2>
+<ul>
+  <li>Exactly one agent may pay on Arc. It is named in code by its id, its company's id and its wallet address. Every other agent and company in Fuel stays on test money (Base Sepolia), with every testnet guard unchanged.</li>
+  <li>That agent's signer signs only a USDC transfer on Arc, from its own wallet, to my shop's wallet, of at most $0.01, and only while its lifetime total stays at or under $5.00.</li>
+  <li>The shop settles each payment itself, submitting the signed transfer to Arc, and its settler can submit nothing else.</li>
+  <li>An automated test suite (<code>scripts/verify-arc-lock.ts</code>, run on every change) checks all of the above. Before going live, each part of the lock was also deliberately broken, one way at a time, and each break was caught by its own check.</li>
+</ul>
+
+<h2>Download</h2>
+<ul>
+  <li><a href="proof.csv">proof.csv</a> — every row above, with the transaction hash and explorer link, built for this page.</li>
+  <li><a href="ledger-export.csv">ledger-export.csv</a> — Fuel's own accounting export, unmodified, for the same agent: no transaction hashes, wallet addresses or network names, by design (<a href="https://github.com/VasanOG/fuel/blob/main/docs/decisions/0006-accounting-export-omits-crypto-identifiers.md">ADR 0006</a>).</li>
+</ul>
+
+<h2>Source</h2>
+<p>Code: <a href="https://github.com/VasanOG/fuel">https://github.com/VasanOG/fuel</a>. The Arc pieces are <code>src/payments/arc-chain.ts</code>, <code>src/payments/arc-demo.ts</code>, <code>demo/arc-shop/</code> and <code>scripts/verify-arc-lock.ts</code>.</p>
+<p style="color:var(--muted);font-size:.85rem">Generated 2026-10-12 14:31:51 UTC from the demo instance's ledger and runner log. The balances and confirmations marked live are read from Arc mainnet by your browser when the page opens (https://rpc.mainnet.arc.io), not by Fuel.</p>
+</main>
+<script>
+// Reads the chain directly from the visitor's browser: nothing here talks to Fuel.
+(() => {
+  const RPC = "https://rpc.mainnet.arc.io", USDC = "0x3600000000000000000000000000000000000000", CHAIN = 5042;
+  const call = (method, params) => fetch(RPC, { method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) }).then((r) => r.json()).then((j) => { if (j.error) throw new Error(j.error.message); return j.result; });
+  const status = document.getElementById("live-status");
+  Promise.all([call("eth_chainId", []), call("eth_blockNumber", [])]).then(([id, block]) => {
+    const ok = parseInt(id, 16) === CHAIN;
+    status.textContent = ok ? "Live from " + "Arc mainnet" + ", block " + parseInt(block, 16).toLocaleString() + ", read by your browser just now." : "The RPC answered for chain " + parseInt(id, 16) + ", not " + CHAIN + ".";
+    if (!ok) return;
+    document.querySelectorAll("[data-balance]").forEach((el) => {
+      const data = "0x70a08231" + el.dataset.balance.slice(2).toLowerCase().padStart(64, "0");
+      call("eth_call", [{ to: USDC, data }, "latest"]).then((v) => { el.textContent = "balance now $" + (Number(BigInt(v)) / 1e6).toFixed(6); }).catch(() => {});
+    });
+    const txs = [...document.querySelectorAll("[data-tx]")];
+    let i = 0;
+    const next = () => {
+      const el = txs[i++]; if (!el) return;
+      call("eth_getTransactionReceipt", [el.dataset.tx]).then((r) => {
+        el.textContent = !r ? "not found" : r.status === "0x1" ? "confirmed, block " + parseInt(r.blockNumber, 16).toLocaleString() : "reverted";
+      }).catch(() => {}).finally(next);
+    };
+    for (let k = 0; k < 4; k++) next();
+  }).catch(() => { status.textContent = "Could not reach " + "Arc mainnet" + " from your browser; the explorer links below still work."; });
+})();
+</script>
+</body>
+</html>

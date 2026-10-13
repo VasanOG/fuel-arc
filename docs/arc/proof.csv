@@ -1,0 +1,15 @@
+When (UTC),Item,Amount (USD),Fuel's decision,Transaction hash,Explorer URL
+2026-10-12 14:10:12 UTC,basic,$0.001,Paid,0x198c5e4b4b12b56c490c15bbdd683452d263e74dabe3f18d799506b8d2015dfe,https://explorer.arc.io/tx/0x198c5e4b4b12b56c490c15bbdd683452d263e74dabe3f18d799506b8d2015dfe
+2026-10-12 14:19:41 UTC,basic,$0.001,Paid,0x7acf73743cb6ca582dbe016a66f653273e5592cbf8ab76382e92fe7af6f2e016,https://explorer.arc.io/tx/0x7acf73743cb6ca582dbe016a66f653273e5592cbf8ab76382e92fe7af6f2e016
+2026-10-12 14:19:44 UTC,basic,$0.001,Paid,0xb57d03ec1de7f0a937d844f243b29b9aeac231e61a7fb627ff42e1aab7852fd2,https://explorer.arc.io/tx/0xb57d03ec1de7f0a937d844f243b29b9aeac231e61a7fb627ff42e1aab7852fd2
+2026-10-12 14:19:46 UTC,basic,$0.001,Paid,0x7003a7c35b054f82e885a91d9101fdf7271f1f5154ca008d4e880dda243c1c78,https://explorer.arc.io/tx/0x7003a7c35b054f82e885a91d9101fdf7271f1f5154ca008d4e880dda243c1c78
+2026-10-12 14:19:48 UTC,basic,$0.001,Paid,0x22896ee97eef3067f4d11e3ba704b723538995a3bd11885c36232958b7c74aa6,https://explorer.arc.io/tx/0x22896ee97eef3067f4d11e3ba704b723538995a3bd11885c36232958b7c74aa6
+2026-10-12 14:19:50 UTC,basic,$0.001,Paid,0x32b83733a74b357b65a657f3a3be105b367b09ee8a16c8d9cb7aadcb3a1b3cba,https://explorer.arc.io/tx/0x32b83733a74b357b65a657f3a3be105b367b09ee8a16c8d9cb7aadcb3a1b3cba
+2026-10-12 14:19:53 UTC,unusual,$0.005,Held for approval: an unusual amount for this agent,,
+2026-10-12 14:19:53 UTC,unusual,$0.005,"Paid after approval (operator key, 2026-10-12 14:19:53 UTC)",0x0f478b9359f631d5fe92c536d5930c5cff4a61594a7a04f8c126e76a0bebfd48,https://explorer.arc.io/tx/0x0f478b9359f631d5fe92c536d5930c5cff4a61594a7a04f8c126e76a0bebfd48
+2026-10-12 14:19:56 UTC,basic,$0.001,Paid,0x2aced4427e2d82dc8ccbd625391f6a1e91facba9d910090aa5d699e2f25f25ec,https://explorer.arc.io/tx/0x2aced4427e2d82dc8ccbd625391f6a1e91facba9d910090aa5d699e2f25f25ec
+2026-10-12 14:19:58 UTC,ceiling,$0.01,Refused: too many payments too quickly,,
+2026-10-12 14:21:04 UTC,ceiling,$0.01,Held for approval: an unusual amount for this agent,,
+2026-10-12 14:21:04 UTC,ceiling,$0.01,"Paid after approval (operator key, 2026-10-12 14:21:04 UTC)",0x0af7732123e54814b2d4c434af342ecd5e843f820564eecdc86b2d95c722f30b,https://explorer.arc.io/tx/0x0af7732123e54814b2d4c434af342ecd5e843f820564eecdc86b2d95c722f30b
+2026-10-12 14:21:07 UTC,basic,$0.001,Refused: over the agent's own cap,,
+2026-10-12 14:21:07 UTC,basic,,"Refused: the agent was frozen by the operator (HTTP 423) -- no ledger row; from the demo runner's log, not Fuel's ledger",,

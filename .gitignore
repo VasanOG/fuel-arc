@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+.env.local
+dashboard/.env.local
+*.db
+*.db-wal
+*.db-shm
+*.bak
+*.backup
+.fuel-arc/
+.DS_Store

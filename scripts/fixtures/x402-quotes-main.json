@@ -1,0 +1,70 @@
+{
+  "recordedAt": "2026-10-11T10:40:28.021Z",
+  "recordedFrom": "main at d660535, before the gateway startup fix, with its facilitator handshake answered by scripts/fixtures/x402-supported.json (offline)",
+  "seed": {
+    "agentName": "research-bot",
+    "originUrl": "https://seller.fuel-test.example/forecast",
+    "priceBaseUnits": "50000",
+    "label": "verify-startup gateway",
+    "payTo": "0x0000000000000000000000000000000000000402"
+  },
+  "quotes": {
+    "gateway": {
+      "x402Version": 2,
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "eip155:84532",
+          "amount": "50000",
+          "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+          "payTo": "0x6e12cbc1f85918fac4fd50967292ba1733be3da6",
+          "maxTimeoutSeconds": 70,
+          "extra": {
+            "name": "USDC",
+            "version": "2"
+          }
+        }
+      ],
+      "description": "Paid API access, fronted by Fuel",
+      "mimeType": null
+    },
+    "paid-hello": {
+      "x402Version": 2,
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "eip155:84532",
+          "amount": "1000",
+          "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+          "payTo": "0x0000000000000000000000000000000000000402",
+          "maxTimeoutSeconds": 300,
+          "extra": {
+            "name": "USDC",
+            "version": "2"
+          }
+        }
+      ],
+      "description": "Phase 0 test endpoint — proves the x402 payment loop works",
+      "mimeType": ""
+    },
+    "paid-hello-large": {
+      "x402Version": 2,
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "eip155:84532",
+          "amount": "5000",
+          "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+          "payTo": "0x0000000000000000000000000000000000000402",
+          "maxTimeoutSeconds": 300,
+          "extra": {
+            "name": "USDC",
+            "version": "2"
+          }
+        }
+      ],
+      "description": "Phase 3 test endpoint — 5x the usual price, to trip the anomaly check",
+      "mimeType": ""
+    }
+  }
+}

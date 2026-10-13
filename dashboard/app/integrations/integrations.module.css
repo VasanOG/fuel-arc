@@ -1,0 +1,188 @@
+/*
+ * Integrations.
+ *
+ * Built almost entirely from globals.css devices — .section, .eyebrow,
+ * .panel, .panel-pad, .record. What this file adds is the small vocabulary a
+ * status page needs that a data table does not: a fact that is true, a fact
+ * that is pending, and the explanatory sentence beneath a record.
+ */
+
+.ok {
+  color: var(--credit);
+  font-weight: 500;
+}
+
+.pending {
+  color: var(--ink-60);
+}
+
+.since {
+  display: block;
+  font-size: var(--t-micro);
+  color: var(--ink-40);
+  margin-top: 0.1rem;
+}
+
+.explain {
+  font-size: var(--t-small);
+  color: var(--ink-60);
+  max-width: 62ch;
+  margin: var(--s-4) 0 0;
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--rule);
+}
+
+.cta {
+  display: inline-block;
+  font-size: var(--t-small);
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-decoration-color: var(--rule-strong);
+  margin-top: var(--s-3);
+}
+
+.cta:hover {
+  text-decoration-color: var(--ink);
+}
+
+/*
+ * Fuel could not be asked — a real state, distinct from "not connected".
+ * Styled like .empty rather than like an error: this is not a broken page,
+ * it is a page reporting that it does not currently know.
+ */
+.unknown {
+  padding: var(--s-5) var(--s-4);
+  color: var(--ink-60);
+  font-size: var(--t-body);
+  margin: 0;
+}
+
+.link {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/*
+ * Alerts (ADR 0021). The owner's one form on this page, so it borrows the
+ * export form's input look (.date-input in globals.css) rather than inventing
+ * a field style, and wraps at phone width instead of scrolling sideways.
+ */
+.alertForm {
+  margin: var(--s-5) 0 0;
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--rule);
+}
+
+.fieldLabel {
+  display: block;
+  font-size: var(--t-small);
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: var(--s-2);
+}
+
+.fieldRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  align-items: center;
+}
+
+.field {
+  flex: 1 1 18rem;
+  min-width: 0;
+  font: inherit;
+  font-size: var(--t-body);
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-sm);
+  background: #fff;
+  color: var(--ink);
+}
+
+.hint {
+  font-size: var(--t-small);
+  color: var(--ink-60);
+  max-width: 62ch;
+  margin: var(--s-2) 0 0;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin-top: var(--s-4);
+}
+
+.confirm {
+  margin-top: var(--s-4);
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+}
+
+.confirmAsk {
+  margin: 0;
+  font-size: var(--t-body);
+  max-width: 62ch;
+}
+
+.confirm .actions {
+  margin-top: var(--s-3);
+}
+
+.resultOk {
+  color: var(--credit);
+  font-size: var(--t-small);
+  margin: var(--s-3) 0 0;
+}
+
+.subhead {
+  font-size: var(--t-eyebrow);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-eyebrow);
+  color: var(--ink-60);
+  margin: var(--s-6) 0 var(--s-3);
+}
+
+.history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.historyItem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-2) var(--s-3);
+  padding: var(--s-3) 0;
+  border-top: 1px solid var(--rule);
+}
+
+.historyItem:first-child {
+  border-top: none;
+}
+
+.historyWhat {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.historyMeta {
+  font-size: var(--t-small);
+  color: var(--ink-60);
+}
+
+.notCovered {
+  margin: var(--s-2) 0 0;
+  padding-left: 1.2em;
+  font-size: var(--t-small);
+  color: var(--ink-60);
+  max-width: 62ch;
+}

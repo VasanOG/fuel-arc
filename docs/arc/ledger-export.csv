@@ -1,0 +1,10 @@
+﻿Date,Reference,Agent,Counterparty,Direction,Description,Amount,Currency,Category,Status
+2026-10-12,124a211c-ad50-4b0c-ac49-174e72ccf100,arc-demo-agent,127.0.0.1:3210,Spend,Agent API payment,0.001000,USD,,Paid
+2026-10-12,5458b043-7a4c-40ec-98d0-8f7dd170f8df,arc-demo-agent,127.0.0.1:3210,Spend,Agent API payment,0.001000,USD,,Paid
+2026-10-12,d3f146e1-e862-49e9-8979-c22ba0f5dd24,arc-demo-agent,127.0.0.1:3210,Spend,Agent API payment,0.001000,USD,,Paid
+2026-10-12,73b53dda-74dd-46c8-a4f9-16d19a96ee73,arc-demo-agent,127.0.0.1:3210,Spend,Agent API payment,0.001000,USD,,Paid
+2026-10-12,270b2a38-c2f2-4604-a104-bc699deb1124,arc-demo-agent,127.0.0.1:3210,Spend,Agent API payment,0.001000,USD,,Paid
+2026-10-12,242b78d4-b2c6-43cf-9d2e-0a04c46d8f83,arc-demo-agent,127.0.0.1:3210,Spend,Agent API payment,0.001000,USD,,Paid
+2026-10-12,1f1dcc69-5298-41e3-8ce5-6b249eadb4cf,arc-demo-agent,127.0.0.1:3210,Spend,Agent API payment,0.005000,USD,,Paid
+2026-10-12,65af2439-b1d4-46b7-9a22-190476d063dc,arc-demo-agent,127.0.0.1:3210,Spend,Agent API payment,0.001000,USD,,Paid
+2026-10-12,7a91d8ca-8123-42af-852a-1230f2f7d9c7,arc-demo-agent,127.0.0.1:3210,Spend,Agent API payment,0.010000,USD,,Paid

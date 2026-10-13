@@ -1,0 +1,174 @@
+/*
+ * Developer.
+ *
+ * The one page in the product whose content IS code, so it is the one place
+ * this codebase needed a code-block device. Built to sit inside the same
+ * paper .panel every other page uses — a syntax-highlighted dark terminal
+ * block here would be the one surface that looks like it belongs to a
+ * different product.
+ */
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: step;
+}
+
+.steps > li {
+  counter-increment: step;
+  position: relative;
+  padding-left: 2.25rem;
+  margin-bottom: var(--s-5);
+}
+
+.steps > li:last-child {
+  margin-bottom: 0;
+}
+
+/* Numbered, because this genuinely is a sequence — the order is the whole
+   point of "the first check that fails decides the outcome". */
+.steps > li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0.1rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: var(--t-micro);
+  color: var(--ink-60);
+  border: 1px solid var(--rule-strong);
+  border-radius: 50%;
+}
+
+.stepTitle {
+  font-size: var(--t-body);
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 var(--s-1);
+}
+
+.stepBody {
+  font-size: var(--t-small);
+  color: var(--ink-60);
+  margin: 0;
+  max-width: 62ch;
+}
+
+.stepBody :global(a) {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.lede {
+  font-size: var(--t-small);
+  color: var(--ink-60);
+  max-width: 62ch;
+  margin: 0 0 var(--s-4);
+}
+
+.lede :global(a) {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+/*
+ * The code block. Canvas rather than paper, so it reads as a distinct
+ * material from the prose around it — the same relationship .panel and
+ * .canvas already have elsewhere, not a new one invented for this page.
+ */
+.code {
+  background: var(--canvas);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  padding: var(--s-4);
+  overflow-x: auto;
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: var(--t-small);
+  line-height: 1.6;
+  color: var(--ink);
+  margin: 0;
+}
+
+.caption {
+  font-size: var(--t-small);
+  color: var(--ink-60);
+  max-width: 62ch;
+  margin: var(--s-3) 0 0;
+}
+
+.caption code {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: var(--t-micro);
+  background: var(--canvas);
+  padding: 0.05rem 0.3rem;
+  border-radius: var(--r-sm);
+}
+
+/*
+ * The outcomes table's prose cells.
+ *
+ * .data-table's default is nowrap, sized for a short label or a figure — and
+ * `.data-table td { white-space: nowrap }` is a class+element selector, so a
+ * bare `.prose` class loses that fight on specificity regardless of source
+ * order; the override has to match `.data-table td.numeric`'s own shape
+ * (`table.data-table td.prose`) to win deterministically. The first version
+ * of this rule used a bare `.prose` and never actually applied — the table
+ * still went to nowrap and adjacent cells visibly overlapped.
+ */
+:global(table.data-table) td.prose {
+  white-space: normal;
+  max-width: 26rem;
+}
+
+/* HTTP status column: three tones, matching the outcome it introduces —
+   never a fourth, and never a colour scheme of its own. */
+.httpOk {
+  color: var(--credit);
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-weight: 500;
+}
+
+.httpWait {
+  color: var(--debit);
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-weight: 500;
+}
+
+.httpBad {
+  color: var(--bad-ink);
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-weight: 500;
+}
+
+/*
+ * The credentials notice. Load-bearing, not a footnote — set apart the way an
+ * accounting caveat is, with the same left-rule device the Activity Ledger and
+ * Approvals pages use for a fact about the whole page rather than one row.
+ */
+.notice {
+  background: var(--info-surface);
+  border-left: 2px solid var(--live);
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+  padding: var(--s-4) var(--s-5);
+}
+
+.noticeLead {
+  font-size: var(--t-body);
+  font-weight: 500;
+  color: var(--ink);
+  margin: 0 0 var(--s-3);
+  max-width: 62ch;
+}
+
+.noticeBody {
+  font-size: var(--t-small);
+  color: var(--ink-60);
+  margin: 0;
+  max-width: 62ch;
+}

@@ -1,0 +1,174 @@
+/*
+ * The approvals queue.
+ *
+ * Built from the shared classes in globals.css — .panel, .data-table, .pill,
+ * .note, .scroll-x — and the tokens in theme.css. What this file adds is the
+ * view switcher and the empty state, which is the most important thing on the
+ * page: an empty approvals queue is the normal, good condition, and it should
+ * read that way rather than as a page that failed to load.
+ */
+
+/* ---- the view switcher --------------------------------------------------- */
+
+/*
+ * Links, not a select. There are at most five views and each is a distinct
+ * destination worth its own URL; a dropdown would hide the counts, which are
+ * the fastest thing on the page to read.
+ */
+.views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin-bottom: var(--s-5);
+}
+
+.view {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  font-size: var(--t-small);
+  color: var(--ink-60);
+  background: var(--canvas);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  padding: var(--s-2) var(--s-3);
+  text-decoration: none;
+}
+
+.view:hover {
+  border-color: var(--rule-strong);
+  color: var(--ink);
+}
+
+/*
+ * The current view is marked by weight and a solid left rule — the same device
+ * the side nav uses for the active section, rather than a second idiom.
+ */
+.viewOn {
+  color: var(--ink);
+  font-weight: 500;
+  background: var(--paper);
+  border-color: var(--rule-strong);
+  box-shadow: inset 2px 0 0 var(--ink);
+}
+
+.count {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: var(--t-micro);
+  color: var(--ink-40);
+  font-variant-numeric: tabular-nums;
+}
+
+.viewOn .count {
+  color: var(--ink-60);
+}
+
+/* ---- rows ---------------------------------------------------------------- */
+
+.agentLink {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-decoration-color: var(--rule-strong);
+}
+
+.agentLink:hover {
+  text-decoration-color: var(--ink);
+}
+
+.team,
+.expiry {
+  display: block;
+  font-size: var(--t-micro);
+  color: var(--ink-40);
+  margin-top: 0.1rem;
+}
+
+/* ---- states -------------------------------------------------------------- */
+
+/*
+ * An empty queue is the healthy state, so it gets a proper explanation rather
+ * than one grey line. The second paragraph answers the question an operator
+ * actually has when they find nothing here: is this working?
+ */
+.empty {
+  padding: var(--s-6) var(--s-5);
+  max-width: 62ch;
+}
+
+.emptyLead {
+  font-size: var(--t-lead);
+  color: var(--ink);
+  margin: 0;
+}
+
+.emptyWhy {
+  font-size: var(--t-small);
+  color: var(--ink-60);
+  margin: var(--s-3) 0 0;
+}
+
+.error {
+  font-size: var(--t-small);
+  color: var(--bad-ink);
+  background: var(--bad-surface);
+  border: 1px solid var(--danger);
+  border-radius: var(--r-sm);
+  padding: var(--s-3) var(--s-4);
+  margin: 0 0 var(--s-4);
+  max-width: 62ch;
+}
+
+/* Same device the Activity Ledger uses for a caveat about the whole page. */
+.demoNote {
+  font-size: var(--t-small);
+  color: var(--ink-60);
+  background: var(--info-surface);
+  border-left: 2px solid var(--live);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  padding: var(--s-3) var(--s-4);
+  margin: 0 0 var(--s-4);
+  max-width: 62ch;
+}
+
+.footnotes {
+  margin-top: var(--s-5);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--rule);
+}
+
+/* ---- deciding ----------------------------------------------------------- */
+
+.decide {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.decideRow {
+  display: flex;
+  gap: var(--s-2);
+}
+
+/*
+ * The confirm sentence, given room to wrap. It restates an amount and an agent
+ * name, and a sentence about money that is clipped by its column is worse than
+ * one that takes two lines.
+ */
+.decideAsk {
+  font-size: var(--t-small);
+  color: var(--ink);
+  max-width: 22rem;
+}
+
+/*
+ * Who decided it, under when. Same quiet treatment as the team name under an
+ * agent and the expiry under a date — a supporting fact, not a column of its
+ * own, because most rows have nothing to put here.
+ */
+.decidedBy {
+  display: block;
+  font-size: var(--t-micro);
+  color: var(--ink-60);
+  overflow-wrap: anywhere;
+}

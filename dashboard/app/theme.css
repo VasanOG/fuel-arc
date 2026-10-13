@@ -1,0 +1,106 @@
+/*
+ * Fuel's one visual system.
+ *
+ * Design note, so the choices are legible to whoever edits this next:
+ *
+ * The shell is dark so the evidence is light. Navy and charcoal carry
+ * navigation, identity and environment and nothing else; every figure lives on
+ * a warm paper surface. The reader's eye should go to the record, not to the
+ * furniture around it.
+ *
+ * The navy is not an arbitrary dark grey — it is the same hue as --ink
+ * (#14192b, about 226deg), which the accounting ledger has always been set in.
+ * Chrome and content are demonstrably one family rather than a dark sidebar
+ * bolted onto a light app.
+ *
+ * The paper half of this file is lifted verbatim out of accounting.module.css,
+ * at the exact values it already used, so promoting it here moves the ledger by
+ * nothing. Its reasoning still holds and is worth repeating: debit and credit
+ * are ochre and teal rather than red and green, because in double entry they
+ * are directions, not gains and losses, and colouring them with profit-and-loss
+ * valence would teach the reader something false.
+ *
+ * Red is reserved. It means blocked, failed, or about to do something
+ * dangerous, and it is never spent on anything else.
+ */
+
+:root {
+  /* ---- shell: navy chrome ---------------------------------------------- */
+  --shell-deep: #0b0f1c;
+  --shell: #121829;
+  --shell-raised: #1a2136;
+  --shell-line: #232b42;
+  --shell-text: #a8b0c7;
+  --shell-text-strong: #f5f6fa;
+  --shell-text-dim: #7b8299;
+  --shell-accent: #7d9bff;
+  /*
+   * Semantic colours for the dark chrome, which the paper palette cannot serve:
+   * --debit (#a4601c) and --danger (#c0392b) are chosen to sit on warm paper and
+   * are close to unreadable on navy. These are the same meanings, lightened
+   * until they clear WCAG AA against --shell.
+   */
+  --shell-warn: #f0b429;
+  --shell-danger-bg: #a93226;
+  --shell-danger-ink: #ffffff;
+
+  /* ---- paper: the record ------------------------------------------------ */
+  --ink: #14192b;
+  --ink-60: #5a6076;
+  /*
+   * Darkened from #8b90a3 in 5A-1. That value is what the ledger's column
+   * headers, section eyebrows and provenance headings had always used, and it
+   * measured about 3.0:1 against paper — below WCAG AA's 4.5:1 for text this
+   * small. It was never legible; it only looked deliberate. The new value keeps
+   * the same three-step ink hierarchy and clears 4.7:1 on every surface Fuel
+   * paints.
+   */
+  --ink-40: #656b80;
+  --paper: #fcfbf8;
+  --canvas: #f7f6f2;
+  --surface: #f2f1ec;
+  --rule: #e6e2d8;
+  --rule-strong: #cdc7b8;
+
+  /* ---- semantic --------------------------------------------------------- */
+  --debit: #a4601c;
+  --credit: #16706b;
+  --live: #3b5bdb;
+  --live-hover: #2f4bc4;
+  --danger: #c0392b;
+
+  --good-surface: #f0f7f6;
+  --good-ink: #0f5450;
+  --bad-surface: #fdf3f2;
+  --bad-ink: #8e2b20;
+  --info-surface: #f4f6fe;
+
+  /* ---- space ------------------------------------------------------------ */
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-5: 1.5rem;
+  --s-6: 2rem;
+  --s-7: 3rem;
+
+  /* ---- type ------------------------------------------------------------- */
+  --t-micro: 0.65rem;
+  --t-eyebrow: 0.7rem;
+  --t-small: 0.8rem;
+  --t-body: 0.875rem;
+  --t-lead: 1.05rem;
+  --t-title: 1.5rem;
+
+  --track-head: 0.12em;
+  --track-label: 0.1em;
+  --track-eyebrow: 0.14em;
+
+  /* ---- form ------------------------------------------------------------- */
+  --r-sm: 2px;
+  --r-md: 3px;
+  --hairline: 0 1px 0 var(--rule);
+
+  --nav-width: 15.5rem;
+  --content-max: 68rem;
+}

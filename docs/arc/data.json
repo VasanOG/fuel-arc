@@ -1,0 +1,150 @@
+{
+  "generatedAt": "2026-10-12T14:21:50.200Z",
+  "network": "Arc mainnet",
+  "chainId": 5042,
+  "agent": "0xa963C45e1fc634036EE53FA8DAF712B83F05bC4f",
+  "shop": "0x3ddC6a2d414e658EdC3462fF97F963C81Fca64e7",
+  "payments": [
+    {
+      "id": "124a211c-ad50-4b0c-ac49-174e72ccf100",
+      "createdAt": "2026-10-12T14:10:12.288Z",
+      "settledAt": "2026-10-12T14:10:18.512Z",
+      "status": "settled",
+      "refusalCode": null,
+      "amountUsd": "0.001000",
+      "txHash": "0x198c5e4b4b12b56c490c15bbdd683452d263e74dabe3f18d799506b8d2015dfe",
+      "explorerUrl": "https://explorer.arc.io/tx/0x198c5e4b4b12b56c490c15bbdd683452d263e74dabe3f18d799506b8d2015dfe"
+    },
+    {
+      "id": "5458b043-7a4c-40ec-98d0-8f7dd170f8df",
+      "createdAt": "2026-10-12T14:19:41.027Z",
+      "settledAt": "2026-10-12T14:19:44.200Z",
+      "status": "settled",
+      "refusalCode": null,
+      "amountUsd": "0.001000",
+      "txHash": "0x7acf73743cb6ca582dbe016a66f653273e5592cbf8ab76382e92fe7af6f2e016",
+      "explorerUrl": "https://explorer.arc.io/tx/0x7acf73743cb6ca582dbe016a66f653273e5592cbf8ab76382e92fe7af6f2e016"
+    },
+    {
+      "id": "d3f146e1-e862-49e9-8979-c22ba0f5dd24",
+      "createdAt": "2026-10-12T14:19:44.216Z",
+      "settledAt": "2026-10-12T14:19:46.517Z",
+      "status": "settled",
+      "refusalCode": null,
+      "amountUsd": "0.001000",
+      "txHash": "0xb57d03ec1de7f0a937d844f243b29b9aeac231e61a7fb627ff42e1aab7852fd2",
+      "explorerUrl": "https://explorer.arc.io/tx/0xb57d03ec1de7f0a937d844f243b29b9aeac231e61a7fb627ff42e1aab7852fd2"
+    },
+    {
+      "id": "73b53dda-74dd-46c8-a4f9-16d19a96ee73",
+      "createdAt": "2026-10-12T14:19:46.526Z",
+      "settledAt": "2026-10-12T14:19:48.611Z",
+      "status": "settled",
+      "refusalCode": null,
+      "amountUsd": "0.001000",
+      "txHash": "0x7003a7c35b054f82e885a91d9101fdf7271f1f5154ca008d4e880dda243c1c78",
+      "explorerUrl": "https://explorer.arc.io/tx/0x7003a7c35b054f82e885a91d9101fdf7271f1f5154ca008d4e880dda243c1c78"
+    },
+    {
+      "id": "270b2a38-c2f2-4604-a104-bc699deb1124",
+      "createdAt": "2026-10-12T14:19:48.622Z",
+      "settledAt": "2026-10-12T14:19:50.863Z",
+      "status": "settled",
+      "refusalCode": null,
+      "amountUsd": "0.001000",
+      "txHash": "0x22896ee97eef3067f4d11e3ba704b723538995a3bd11885c36232958b7c74aa6",
+      "explorerUrl": "https://explorer.arc.io/tx/0x22896ee97eef3067f4d11e3ba704b723538995a3bd11885c36232958b7c74aa6"
+    },
+    {
+      "id": "242b78d4-b2c6-43cf-9d2e-0a04c46d8f83",
+      "createdAt": "2026-10-12T14:19:50.868Z",
+      "settledAt": "2026-10-12T14:19:53.160Z",
+      "status": "settled",
+      "refusalCode": null,
+      "amountUsd": "0.001000",
+      "txHash": "0x32b83733a74b357b65a657f3a3be105b367b09ee8a16c8d9cb7aadcb3a1b3cba",
+      "explorerUrl": "https://explorer.arc.io/tx/0x32b83733a74b357b65a657f3a3be105b367b09ee8a16c8d9cb7aadcb3a1b3cba"
+    },
+    {
+      "id": "714edd57-dbec-4b04-bdf0-c73afdfe96a4",
+      "createdAt": "2026-10-12T14:19:53.174Z",
+      "settledAt": null,
+      "status": "blocked",
+      "refusalCode": "ANOMALY",
+      "amountUsd": "0.005000",
+      "txHash": null,
+      "explorerUrl": null
+    },
+    {
+      "id": "1f1dcc69-5298-41e3-8ce5-6b249eadb4cf",
+      "createdAt": "2026-10-12T14:19:53.188Z",
+      "settledAt": "2026-10-12T14:19:56.310Z",
+      "status": "settled",
+      "refusalCode": null,
+      "amountUsd": "0.005000",
+      "txHash": "0x0f478b9359f631d5fe92c536d5930c5cff4a61594a7a04f8c126e76a0bebfd48",
+      "explorerUrl": "https://explorer.arc.io/tx/0x0f478b9359f631d5fe92c536d5930c5cff4a61594a7a04f8c126e76a0bebfd48"
+    },
+    {
+      "id": "65af2439-b1d4-46b7-9a22-190476d063dc",
+      "createdAt": "2026-10-12T14:19:56.316Z",
+      "settledAt": "2026-10-12T14:19:58.897Z",
+      "status": "settled",
+      "refusalCode": null,
+      "amountUsd": "0.001000",
+      "txHash": "0x2aced4427e2d82dc8ccbd625391f6a1e91facba9d910090aa5d699e2f25f25ec",
+      "explorerUrl": "https://explorer.arc.io/tx/0x2aced4427e2d82dc8ccbd625391f6a1e91facba9d910090aa5d699e2f25f25ec"
+    },
+    {
+      "id": "7f67b68b-2888-4ecd-8ebf-eba74e6f7e94",
+      "createdAt": "2026-10-12T14:19:58.907Z",
+      "settledAt": null,
+      "status": "blocked",
+      "refusalCode": "VELOCITY",
+      "amountUsd": "0.010000",
+      "txHash": null,
+      "explorerUrl": null
+    },
+    {
+      "id": "bdc1b093-cf50-415b-b1d0-cdf818126cdf",
+      "createdAt": "2026-10-12T14:21:04.593Z",
+      "settledAt": null,
+      "status": "blocked",
+      "refusalCode": "ANOMALY",
+      "amountUsd": "0.010000",
+      "txHash": null,
+      "explorerUrl": null
+    },
+    {
+      "id": "7a91d8ca-8123-42af-852a-1230f2f7d9c7",
+      "createdAt": "2026-10-12T14:21:04.764Z",
+      "settledAt": "2026-10-12T14:21:07.335Z",
+      "status": "settled",
+      "refusalCode": null,
+      "amountUsd": "0.010000",
+      "txHash": "0x0af7732123e54814b2d4c434af342ecd5e843f820564eecdc86b2d95c722f30b",
+      "explorerUrl": "https://explorer.arc.io/tx/0x0af7732123e54814b2d4c434af342ecd5e843f820564eecdc86b2d95c722f30b"
+    },
+    {
+      "id": "80c33625-95f7-4f13-8d32-188c7768633a",
+      "createdAt": "2026-10-12T14:21:07.382Z",
+      "settledAt": null,
+      "status": "blocked",
+      "refusalCode": "AGENT_CAP",
+      "amountUsd": "0.001000",
+      "txHash": null,
+      "explorerUrl": null
+    }
+  ],
+  "totals": {
+    "settledCount": 9,
+    "settledUsd": "0.022000",
+    "blockedCount": 4
+  },
+  "notLedgered": [
+    {
+      "at": "2026-10-12T14:21:07.355Z",
+      "what": "a payment while frozen was refused before any reservation (HTTP 423); no row is written, only a counter"
+    }
+  ]
+}

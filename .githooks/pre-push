@@ -1,0 +1,86 @@
+#!/bin/sh
+#
+# Fuel's pre-push hook: `npm test` must pass on exactly what is being pushed.
+#
+#   Install, once per clone (deliberately by hand):   npm run hooks:install
+#   Skip it, in an emergency:                         git push --no-verify
+#
+# WHAT IT TESTS is the commit at the tip of each branch or tag being pushed,
+# checked out on its own in a temporary worktree -- not the files in this
+# working tree. Uncommitted edits therefore can neither break the check nor
+# slip past it, and pushing a commit other than the one checked out tests that
+# commit. Commits underneath a tip in the same push are not tested one by one.
+# The worktree has no .env and no fuel.db, which the suites never need.
+#
+# It borrows this checkout's node_modules (linked, not copied), so the
+# dependencies tested are the ones installed here.
+#
+# Deleting a remote branch pushes nothing, so it tests nothing.
+
+set -u
+
+root=$(git rev-parse --show-toplevel) || exit 1
+tested=""
+status=0
+work=""
+child=""
+
+cleanup() {
+  # A test still running (the hook was interrupted) is stopped first, so it is
+  # never left working inside a worktree that is about to be deleted.
+  if [ -n "$child" ]; then
+    kill "$child" 2>/dev/null
+    wait "$child" 2>/dev/null
+    child=""
+  fi
+  if [ -n "$work" ] && [ -d "$work" ]; then
+    # The links first, so nothing below can ever follow them into this checkout.
+    rm -f "$work/tree/node_modules" "$work/tree/dashboard/node_modules"
+    git -C "$root" worktree remove --force "$work/tree" >/dev/null 2>&1
+    rm -rf "$work"
+  fi
+  work=""
+}
+# On any exit, and on interruption: nothing is left behind either way.
+trap 'cleanup' EXIT
+trap 'cleanup; exit 130' INT TERM HUP
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  # All zeros: a deletion. Nothing is being sent, so there is nothing to test.
+  case $local_sha in *[!0]*) ;; *) continue ;; esac
+  # The same commit pushed to two refs is tested once.
+  case " $tested " in *" $local_sha "*) continue ;; esac
+  tested="$tested $local_sha"
+
+  echo "pre-push: running npm test on $(git log -1 --format='%h %s' "$local_sha")"
+  work=$(mktemp -d "${TMPDIR:-/tmp}/fuel-prepush-XXXXXX") || { status=1; break; }
+  if ! git -C "$root" worktree add --quiet --detach "$work/tree" "$local_sha"; then
+    cleanup
+    status=1
+    break
+  fi
+  [ -d "$root/node_modules" ] && ln -s "$root/node_modules" "$work/tree/node_modules"
+  [ -d "$root/dashboard/node_modules" ] && [ -d "$work/tree/dashboard" ] &&
+    ln -s "$root/dashboard/node_modules" "$work/tree/dashboard/node_modules"
+
+  # stdin is git's list of refs; npm must not read the rest of it. Run as a
+  # tracked job so an interrupted hook can stop it (see cleanup).
+  npm --prefix "$work/tree" test </dev/null &
+  child=$!
+  wait "$child"
+  rc=$?
+  child=""
+  cleanup
+  if [ $rc -ne 0 ]; then
+    status=$rc
+    break
+  fi
+done
+
+if [ $status -ne 0 ]; then
+  echo ""
+  echo "pre-push: npm test did not pass on the commit being pushed, so nothing was pushed."
+  echo "          To push anyway, in an emergency:  git push --no-verify"
+  exit 1
+fi
+exit 0

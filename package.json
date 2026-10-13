@@ -1,0 +1,52 @@
+{
+  "name": "fuel",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "tsx scripts/test.ts",
+    "create-sandbox-wallet": "tsx scripts/create-sandbox-wallet.ts",
+    "dev": "tsx src/server.ts",
+    "new-payer-wallet": "tsx scripts/new-payer-wallet.ts",
+    "check-payer-balance": "tsx scripts/check-payer-balance.ts",
+    "pay-test-endpoint": "tsx scripts/pay-test-endpoint.ts",
+    "verify-rollup": "tsx scripts/verify-rollup.ts",
+    "verify-quickbooks": "tsx scripts/verify-quickbooks.ts",
+    "qa-dashboard": "tsx scripts/qa-dashboard.ts",
+    "verify-api": "tsx scripts/verify-api.ts",
+    "walk-accounting": "tsx scripts/walk-accounting.ts",
+    "walk-revenue": "tsx scripts/walk-revenue.ts",
+    "live-origin-server": "tsx scripts/live-origin-server.ts",
+    "verify-migration": "tsx scripts/verify-migration.ts",
+    "verify-earning": "tsx scripts/verify-earning.ts",
+    "mint-invite": "tsx scripts/mint-invite.ts",
+    "set-password": "tsx scripts/set-password.ts",
+    "seed-qa-dashboard": "tsx scripts/seed-qa-dashboard.ts",
+    "verify-runner": "tsx scripts/verify-runner.ts",
+    "verify-startup": "tsx scripts/verify-startup.ts",
+    "verify-pins": "tsx scripts/verify-pins.ts",
+    "verify-arc-lock": "tsx scripts/verify-arc-lock.ts",
+    "hooks:install": "git config core.hooksPath .githooks"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "@fireblocks/ts-sdk": "^24.0.0",
+    "@x402/core": "^2.20.0",
+    "@x402/evm": "^2.20.0",
+    "@x402/express": "^2.20.0",
+    "dotenv": "^16.4.5",
+    "express": "^5.2.1",
+    "undici": "^8.9.0",
+    "viem": "^2.55.10"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.10.2",
+    "axe-core": "^4.13.0",
+    "playwright": "^1.62.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,604 @@
+/*
+ * The accounting workbench.
+ *
+ * Design note, so the choices are legible to whoever edits this next:
+ *
+ * The hero is the journal entry itself, set as a ruled two-column ledger. That
+ * form is five hundred years old and an accountant reads it without being
+ * taught — which is the point, because the argument this page makes is that
+ * Fuel produces a real accounting document, not a data export. Everything else
+ * on the page is deliberately quiet so the ledger carries the weight.
+ *
+ * Debit and credit are ochre and teal rather than red and green. In double
+ * entry they are directions, not gains and losses; colouring them with
+ * profit-and-loss valence would teach the reader something false.
+ *
+ * The signature element is that a ledger line unfolds DOWNWARD into the
+ * payments beneath it, and each payment names the decision that authorised it.
+ * The document is the surface; the provenance is underneath.
+ */
+
+.connected {
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--credit);
+  border-radius: 2px;
+  background: #f0f7f6;
+  color: #0f5450;
+  font-size: 0.85rem;
+  margin: 0 0 1.5rem;
+}
+
+/* ---- page furniture ---------------------------------------------------- */
+
+.env {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  color: var(--ink-60);
+  white-space: nowrap;
+}
+
+.eyebrow {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink-40);
+  margin: 0 0 0.6rem;
+}
+
+/* ---- the chain: a real sequence, so it earns a numbered spine ----------- */
+
+.chain {
+  display: grid;
+  gap: 0;
+  margin-bottom: 2rem;
+  border-left: 2px solid var(--rule);
+  /*
+   * The <ol> is the right element — this is a real sequence — but its decimal
+   * markers were landing on top of the state dots below, two markers competing
+   * for one position. The dots carry the information (they light up as the
+   * chain advances), so they are the ones that stay. Caught by the first
+   * screenshot pass in 5A-1; it had been rendering this way all along.
+   */
+  list-style: none;
+  padding: 0;
+  margin-left: 0;
+}
+
+.step {
+  position: relative;
+  padding: 0 0 1.25rem 1.5rem;
+}
+
+.step:last-child {
+  padding-bottom: 0;
+}
+
+.step::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: 0.45rem;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--rule-strong);
+}
+
+.stepDone::before {
+  background: var(--live);
+}
+
+.stepLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.stepDetail {
+  font-size: 0.8rem;
+  color: var(--ink-60);
+  margin: 0.15rem 0 0;
+}
+
+/* ---- controls ---------------------------------------------------------- */
+
+.bar {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  margin-bottom: 1.75rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.fieldLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-60);
+}
+
+.input {
+  font: inherit;
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  background: #fff;
+  color: var(--ink);
+}
+
+.button {
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0.5rem 0.9rem;
+  border-radius: 2px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: #fff;
+  cursor: pointer;
+}
+
+.button:hover:not(:disabled) {
+  background: #000;
+}
+
+.buttonQuiet {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--rule-strong);
+}
+
+.buttonQuiet:hover:not(:disabled) {
+  background: #fff;
+  border-color: var(--ink);
+}
+
+.buttonPost {
+  background: var(--live);
+  border-color: var(--live);
+}
+
+.buttonPost:hover:not(:disabled) {
+  background: #2f4bc4;
+  border-color: #2f4bc4;
+}
+
+.button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.button:focus-visible,
+.input:focus-visible,
+.lineToggle:focus-visible {
+  outline: 2px solid var(--live);
+  outline-offset: 2px;
+}
+
+/* ---- the ledger: the signature element --------------------------------- */
+
+.ledger {
+  background: var(--paper);
+  border: 1px solid var(--rule-strong);
+  border-radius: 3px;
+  box-shadow: 0 1px 0 var(--rule);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.ledgerHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.25rem;
+  border-bottom: 2px solid var(--ink);
+}
+
+.ledgerTitle {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin: 0;
+}
+
+.ledgerDate {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0.2rem 0 0;
+  letter-spacing: -0.01em;
+}
+
+.docNumber {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 0.8rem;
+  color: var(--ink-60);
+  text-align: right;
+}
+
+.docNumber strong {
+  display: block;
+  color: var(--ink);
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.ledgerTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.ledgerTable th {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-40);
+  text-align: left;
+  padding: 0.55rem 1.25rem;
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+
+.amountCol {
+  text-align: right;
+  width: 7.5rem;
+}
+
+.ledgerTable td {
+  padding: 0.7rem 1.25rem;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+
+.amount {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.debit {
+  color: var(--debit);
+}
+
+.credit {
+  color: var(--credit);
+}
+
+.lineToggle {
+  font: inherit;
+  font-weight: 500;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--ink);
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.lineToggle[disabled] {
+  cursor: default;
+  color: var(--ink);
+}
+
+.caret {
+  font-size: 0.6rem;
+  color: var(--ink-40);
+  transition: transform 0.15s ease;
+  display: inline-block;
+  width: 0.6rem;
+}
+
+.caretOpen {
+  transform: rotate(90deg);
+}
+
+.lineNote {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--ink-60);
+  margin-top: 0.2rem;
+  padding-left: 1.05rem;
+}
+
+.totalRow td {
+  border-bottom: none;
+  border-top: 2px solid var(--ink);
+  font-weight: 600;
+  padding-top: 0.8rem;
+}
+
+.balanced {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--credit);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* ---- provenance: what unfolds under a ledger line ----------------------- */
+
+.provenance td {
+  background: var(--surface);
+  padding: 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.provenanceInner {
+  padding: 0.9rem 1.25rem 1rem 2.3rem;
+}
+
+.provenanceHead {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-40);
+  margin: 0 0 0.6rem;
+}
+
+.payments {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.payments th {
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-head);
+  color: var(--ink-40);
+  text-align: left;
+  white-space: nowrap;
+  padding: 0.3rem 0.6rem 0.3rem 0;
+  border-bottom: 1px solid var(--rule-strong);
+}
+
+.payments td {
+  padding: 0.4rem 0.6rem 0.4rem 0;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.payments tr:last-child td {
+  border-bottom: none;
+}
+
+.mono {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * The authorisation badge. This is the payload of the whole page: a payment
+ * either fitted inside every cap, or a named human granted it a single-use
+ * exemption at a moment you can point at.
+ */
+.auth {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 0.15rem 0.45rem;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.authAuto {
+  color: var(--ink-60);
+  border: 1px solid var(--rule-strong);
+}
+
+.authHuman {
+  color: #fff;
+  background: var(--live);
+  border: 1px solid var(--live);
+}
+
+/* ---- messages ---------------------------------------------------------- */
+
+.notice {
+  padding: 0.7rem 0.9rem;
+  border-radius: 2px;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--rule-strong);
+  background: var(--surface);
+}
+
+.noticeError {
+  border-color: #c0392b;
+  background: #fdf3f2;
+  color: #8e2b20;
+}
+
+.noticeGood {
+  border-color: var(--credit);
+  background: #f0f7f6;
+  color: #0f5450;
+}
+
+.confirm {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--live);
+  border-radius: 2px;
+  background: #f4f6fe;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+/* ---- posted history ---------------------------------------------------- */
+
+.history {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.history th {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-40);
+  text-align: left;
+  white-space: nowrap;
+  padding: 0.5rem 0.75rem 0.5rem 0;
+  border-bottom: 1px solid var(--rule-strong);
+}
+
+.history td {
+  padding: 0.6rem 0.75rem 0.6rem 0;
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+
+/*
+ * Wide tables scroll inside their own container so the page body never scrolls
+ * sideways. The ledger keeps its two money columns rather than reflowing into
+ * stacked pairs on a narrow screen: the debit/credit form IS the argument this
+ * page makes, and a version of it that stacks is no longer a ledger.
+ */
+.tableScroll {
+  overflow-x: auto;
+}
+
+.pill {
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 0.15rem 0.45rem;
+  border-radius: 2px;
+  border: 1px solid var(--rule-strong);
+  color: var(--ink-60);
+  white-space: nowrap;
+}
+
+.pillPosted {
+  color: var(--credit);
+  border-color: var(--credit);
+}
+
+.pillPending {
+  color: var(--debit);
+  border-color: var(--debit);
+}
+
+.empty {
+  color: var(--ink-60);
+  font-size: 0.875rem;
+  padding: 1.5rem 0;
+}
+
+@media (max-width: 40rem) {
+  .ledgerTable th,
+  .ledgerTable td {
+    padding-inline: 0.75rem;
+  }
+  .amountCol {
+    width: 5.5rem;
+  }
+  .provenanceInner {
+    padding-left: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caret {
+    transition: none;
+  }
+}
+
+/* ---- writing off a posting whose books are gone (7A-3 item 3) ----------- */
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* The history table keeps cells on one line; these two are prose. */
+.writtenOffNote {
+  display: block;
+  max-width: 28rem;
+  margin-top: 0.3rem;
+  font-size: 0.78rem;
+  color: var(--ink-60);
+  white-space: normal;
+}
+
+.history td.writeOffCell {
+  white-space: normal;
+  padding-top: 0;
+}
+
+.writeOff {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  max-width: 36rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--debit);
+  border-radius: 2px;
+  background: var(--surface);
+  font-size: 0.85rem;
+}
+
+.writeOffLead {
+  margin: 0;
+  font-weight: 600;
+}
+
+.writeOffFacts {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--ink-60);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.textarea {
+  font-family: inherit;
+  resize: vertical;
+  min-height: 4.5rem;
+}
+
+.textarea:focus-visible {
+  outline: 2px solid var(--live);
+  outline-offset: 2px;
+}

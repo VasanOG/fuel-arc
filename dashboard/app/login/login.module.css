@@ -1,0 +1,126 @@
+/*
+ * The one page that is not inside the application shell.
+ *
+ * It borrows the product's two surfaces rather than inventing a third: the
+ * navy chrome the nav is painted in becomes the ground, and the paper the
+ * record is printed on becomes the card. A signed-out visitor should recognise
+ * where they are before they read a word.
+ */
+
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--s-5);
+  background: var(--shell-deep);
+}
+
+.card {
+  width: 100%;
+  max-width: 26rem;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  padding: var(--s-6);
+}
+
+.brand {
+  margin: 0 0 var(--s-5);
+  font-size: var(--t-eyebrow);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-eyebrow);
+  color: var(--ink-60);
+}
+
+.title {
+  margin: 0 0 var(--s-2);
+  font-size: var(--t-title);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.lead {
+  margin: 0 0 var(--s-5);
+  font-size: var(--t-small);
+  color: var(--ink-60);
+}
+
+.noticeBad,
+.noticeQuiet {
+  margin: 0 0 var(--s-5);
+  padding: var(--s-3);
+  border-radius: var(--r-sm);
+  font-size: var(--t-small);
+}
+
+.noticeBad {
+  background: var(--bad-surface);
+  color: var(--bad-ink);
+  border: 1px solid var(--bad-ink);
+}
+
+.noticeQuiet {
+  background: var(--info-surface);
+  color: var(--ink-60);
+  border: 1px solid var(--rule);
+}
+
+.form {
+  display: grid;
+  gap: var(--s-4);
+}
+
+.field {
+  display: grid;
+  gap: var(--s-2);
+}
+
+.label {
+  font-size: var(--t-eyebrow);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--ink-60);
+}
+
+.input {
+  font: inherit;
+  font-size: var(--t-body);
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-sm);
+  background: #fff;
+  color: var(--ink);
+}
+
+.input:hover {
+  border-color: var(--ink-40);
+}
+
+/* A handle is read aloud and retyped, so it is set in the mono face the
+   rest of the product uses for identifiers. */
+.handle {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+}
+
+.hint {
+  font-size: var(--t-small);
+  color: var(--ink-60);
+}
+
+.submit {
+  margin-top: var(--s-2);
+  justify-self: start;
+  padding: var(--s-2) var(--s-5);
+  font-size: var(--t-body);
+}
+
+.foot {
+  margin: var(--s-6) 0 0;
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--rule);
+  font-size: var(--t-small);
+  color: var(--ink-60);
+}

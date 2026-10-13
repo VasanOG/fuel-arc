@@ -1,0 +1,247 @@
+/*
+ * The Activity Ledger.
+ *
+ * Built from the tokens in theme.css and the shared classes in globals.css —
+ * .panel, .data-table, .pill, .btn, .empty, .note all come from there. What
+ * this file adds is the filter bar and the explanation line beneath a row, and
+ * nothing else. A page that needed its own table or its own pill would be a
+ * page drifting away from the rest of the product.
+ */
+
+/* ---- the filter bar ----------------------------------------------------- */
+
+.filters {
+  background: var(--canvas);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  padding: var(--s-4);
+  margin-bottom: var(--s-5);
+}
+
+.filtersLabel {
+  font-size: var(--t-eyebrow);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-eyebrow);
+  color: var(--ink-40);
+  margin: 0 0 var(--s-3);
+}
+
+/*
+ * Auto-fit rather than a fixed column count: seven controls at seven different
+ * natural widths, and the ledger is read on everything from a laptop to a phone.
+ * The minimum is wide enough that a date input keeps its segments on one line.
+ */
+.filterGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--s-3) var(--s-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  font-size: var(--t-small);
+}
+
+.field > span {
+  font-size: var(--t-micro);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--ink-40);
+}
+
+.field select,
+.field input {
+  font: inherit;
+  font-size: var(--t-small);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-sm);
+  padding: var(--s-2);
+  /* Without this a select in a grid track sizes to its widest option and blows
+     the track out; the grid decides the width here, not the content. */
+  min-width: 0;
+  width: 100%;
+}
+
+.filterActions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  margin-top: var(--s-4);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--rule);
+}
+
+.clear {
+  font-size: var(--t-small);
+  color: var(--ink-60);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.clear:hover {
+  color: var(--ink);
+}
+
+.queryError {
+  font-size: var(--t-small);
+  color: var(--bad-ink);
+  background: var(--bad-surface);
+  border: 1px solid var(--danger);
+  border-radius: var(--r-sm);
+  padding: var(--s-3) var(--s-4);
+  margin: 0 0 var(--s-4);
+}
+
+/* ---- the row, and the line under it ------------------------------------- */
+
+.agentLink {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-decoration-color: var(--rule-strong);
+}
+
+.agentLink:hover {
+  text-decoration-color: var(--ink);
+}
+
+/* The team sits under the agent rather than in its own column: with one team
+   in this data a column of identical values would be pure noise, and with
+   several the pairing is what an operator actually reads. */
+.team {
+  display: block;
+  font-size: var(--t-micro);
+  color: var(--ink-40);
+  margin-top: 0.1rem;
+}
+
+/*
+ * The reconciliation handle (ADR 0006), shown whole.
+ *
+ * Not truncated with an ellipsis: this is the string an operator pastes into a
+ * support conversation or matches against the Reference column of the
+ * accounting export, and half of it is no use. The table scrolls instead.
+ */
+.reference {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: var(--t-micro);
+  color: var(--ink-40);
+}
+
+/*
+ * The explanation line.
+ *
+ * Attached to the row above it by removing the border between them and tinting
+ * the pair, so it reads as one record rather than as a second entry. Rows that
+ * simply went through have no such line at all — see the page component.
+ */
+.whyRow {
+  background: var(--surface);
+}
+
+.whyRow:hover {
+  background: var(--surface);
+}
+
+.why {
+  font-size: var(--t-small);
+  color: var(--ink-60);
+  /* The table's default nowrap is right for figures and wrong for a sentence. */
+  white-space: normal;
+  padding-top: 0;
+  max-width: 0; /* lets the colspan cell wrap inside the scroll container */
+}
+
+.why > span {
+  margin-right: var(--s-3);
+}
+
+.noteBad {
+  color: var(--bad-ink);
+}
+
+/* ---- direction ---------------------------------------------------------- */
+
+/*
+ * Which way the money went, said three ways on purpose: the word in this cell,
+ * the sign on the amount, and colour.
+ *
+ * COLOUR IS THE LEAST OF THE THREE and never carries it alone. The words "Money
+ * in" and "Money out" are in the cell itself, so the column survives greyscale
+ * printing, a colour-blind reader, and the forced-colours mode that discards
+ * these declarations entirely. That is the same rule the status pills follow —
+ * tone is a reinforcement, never the message.
+ *
+ * Inbound is the one that gets the accent, because it is the rarer row and the
+ * one an operator is scanning for. Outbound keeps the table's ordinary ink
+ * rather than taking a red: money leaving is the normal case here and colouring
+ * it as a warning would make every healthy ledger look alarming.
+ */
+.directionIn {
+  color: var(--good-ink);
+  font-weight: 600;
+}
+
+.directionOut {
+  color: var(--ink-60);
+}
+
+/* The amount's sign carries the same fact; only the inbound side is tinted, so
+ * a column of ordinary spend reads as plain figures. */
+.amountIn {
+  color: var(--good-ink);
+}
+
+/* ---- paging ------------------------------------------------------------- */
+
+.pager {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  margin-top: var(--s-4);
+  flex-wrap: wrap;
+}
+
+.pagerCount {
+  font-size: var(--t-small);
+  color: var(--ink-60);
+  margin: 0;
+  margin-right: auto;
+}
+
+/*
+ * The accounting date, when it differs from the recorded one.
+ *
+ * Same device as .team under the agent name: a subordinate fact hanging off the
+ * cell it qualifies, rather than a row of its own.
+ */
+.booksTo {
+  display: block;
+  font-size: var(--t-micro);
+  color: var(--ink-40);
+  margin-top: 0.1rem;
+}
+
+/*
+ * A caveat about the page as a whole, not about one row.
+ *
+ * Distinguished from .queryError by weight and colour: that one means Fuel
+ * refused to answer, this one means the answer has a known limit. Both sit
+ * above the table so neither is discovered halfway down it.
+ */
+.setNote {
+  font-size: var(--t-small);
+  color: var(--ink-60);
+  background: var(--info-surface);
+  border-left: 2px solid var(--live);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  padding: var(--s-3) var(--s-4);
+  margin: 0 0 var(--s-4);
+  max-width: 62ch;
+}

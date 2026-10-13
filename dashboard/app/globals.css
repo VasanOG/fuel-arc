@@ -1,0 +1,688 @@
+@import "./theme.css";
+
+/*
+ * Shared element and utility styling, built on theme.css.
+ *
+ * Two things changed here in 5A-1 and both were bugs rather than taste:
+ *
+ * 1. `color-scheme: light dark` used to be declared here. The agents page
+ *    inherited a dark UA palette by accident and survived it, because its
+ *    borders were currentColor-derived and its backgrounds transparent. The
+ *    accounting page did not: it hardcodes near-black ink and painted no
+ *    background of its own, so in a dark browser it rendered near-black text on
+ *    a near-black ground. Fuel now commits to one appearance and paints every
+ *    surface explicitly, so the page reads the same in every browser setting.
+ *
+ * 2. `body` used to set `max-width: 960px`, which silently capped the
+ *    accounting page below the 68rem (1088px) it declares for itself — that
+ *    max-width had never once taken effect. Layout belongs to the shell now.
+ *
+ * Table styling is scoped to `.data-table` rather than the bare `table`
+ * element. Global element selectors leaked into accounting.module.css, which
+ * quietly depended on them for header alignment; a class keeps the two systems
+ * from reaching into each other.
+ */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--shell-deep);
+  color: var(--ink);
+  font-family: var(--font-plex-sans), system-ui, -apple-system, sans-serif;
+  font-size: var(--t-body);
+  line-height: 1.5;
+}
+
+/* One visible focus treatment for the whole product. There were no focus
+   styles at all outside the accounting page before this. */
+:focus-visible {
+  outline: 2px solid var(--live);
+  outline-offset: 2px;
+  border-radius: 1px;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+code {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 0.85em;
+}
+
+/* ---- data tables -------------------------------------------------------- */
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-body);
+}
+
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: var(--s-3);
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+
+.data-table thead th {
+  color: var(--ink-40);
+  font-weight: 600;
+  font-size: var(--t-micro);
+  text-transform: uppercase;
+  letter-spacing: var(--track-head);
+  border-bottom: 1px solid var(--rule-strong);
+}
+
+/* A row header names its row; it is not a column label. */
+.data-table tbody th {
+  font-weight: 500;
+}
+
+.data-table tbody tr:last-child td,
+.data-table tbody tr:last-child th {
+  border-bottom: none;
+}
+
+.data-table tbody tr:hover {
+  background: var(--surface);
+}
+
+.data-table td.numeric,
+.data-table th.numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.data-table td.numeric {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+}
+
+/* ---- inline editing ----------------------------------------------------- */
+
+.cap-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--s-2);
+}
+
+.cap-cell-stack {
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+/*
+ * Available to a screen reader, absent from the page.
+ *
+ * Used for table captions: a caption tells someone arriving at a table by voice
+ * what it holds before they commit to reading it, and the visible page already
+ * says the same thing in its section heading.
+ */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.cap-input {
+  width: 5.5rem;
+  text-align: right;
+  font: inherit;
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  padding: var(--s-1) var(--s-2);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-sm);
+  background: #fff;
+  color: var(--ink);
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--live);
+  font-size: var(--t-small);
+}
+
+.link-btn:disabled {
+  color: var(--ink-40);
+  cursor: not-allowed;
+}
+
+.confirm-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--s-2);
+  font-size: var(--t-small);
+}
+
+.error-text {
+  color: var(--danger);
+  font-size: var(--t-small);
+}
+
+.muted {
+  color: var(--ink-60);
+}
+
+/* ---- export ------------------------------------------------------------- */
+
+.export-panel form {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+}
+
+.export-panel label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  font-size: var(--t-eyebrow);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--ink-60);
+}
+
+.date-input {
+  font: inherit;
+  font-size: var(--t-body);
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-sm);
+  background: #fff;
+  color: var(--ink);
+}
+
+.export-panel button[type="submit"] {
+  border: 1px solid var(--ink);
+  border-radius: var(--r-sm);
+  background: var(--ink);
+  color: #fff;
+  font-size: var(--t-body);
+  font-weight: 500;
+  padding: var(--s-2) var(--s-4);
+}
+
+.export-panel button[type="submit"]:hover {
+  background: #000;
+}
+
+.export-note {
+  font-size: var(--t-small);
+  color: var(--ink-60);
+  margin: var(--s-3) 0 0;
+  max-width: 60ch;
+}
+
+/* ---- content surfaces --------------------------------------------------- */
+
+/*
+ * A paper card. The same treatment the journal entry uses, so a table of agents
+ * and a posted document read as the same kind of object: a record on paper,
+ * lifted a hairline off the canvas behind it.
+ */
+.panel {
+  background: var(--paper);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--hairline);
+  overflow: hidden;
+}
+
+.panel-pad {
+  padding: var(--s-4);
+}
+
+.section {
+  margin-bottom: var(--s-6);
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.eyebrow {
+  font-size: var(--t-eyebrow);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-eyebrow);
+  color: var(--ink-40);
+  margin: 0 0 var(--s-3);
+}
+
+.empty {
+  color: var(--ink-60);
+  font-size: var(--t-body);
+  padding: var(--s-5) var(--s-4);
+  margin: 0;
+}
+
+/* Wide content scrolls inside its own container. The page body never scrolls
+   sideways, and a ledger keeps its columns rather than reflowing into stacked
+   pairs — the two-column form is the argument, so it is not negotiable. */
+.scroll-x {
+  overflow-x: auto;
+}
+
+/*
+ * Form controls get a focus ring on :focus, not only :focus-visible.
+ *
+ * Chromium does not report a focus-visible outline on the host element of
+ * <input type="date">: focus moves into the field's internal segments, and the
+ * host computes outline-style: none. The date pickers on the export form and
+ * the accounting day picker were reachable by keyboard with nothing to show for
+ * it. A text field showing focus on every focus, including a click, is correct
+ * anyway — this is not the case focus-visible exists to suppress.
+ */
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid var(--live);
+  outline-offset: 2px;
+}
+
+/* ---- figures ------------------------------------------------------------ */
+
+/*
+ * The summary strip.
+ *
+ * Deliberately one ruled sheet divided by hairlines, not four floating cards.
+ * A row of cards is the default answer for a dashboard summary and it would
+ * read as generic SaaS furniture; a single sheet with vertical rules is how the
+ * head of a financial statement is set, which is the same vocabulary the ledger
+ * below it already uses. The figures are mono for the same reason the ledger's
+ * amounts are: they are meant to be compared down a column.
+ */
+.figures {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.figure {
+  padding: var(--s-4);
+  border-top: 1px solid var(--rule);
+  border-left: 1px solid var(--rule);
+}
+
+.figure:nth-child(-n + 2) {
+  border-top: none;
+}
+
+.figure:nth-child(odd) {
+  border-left: none;
+}
+
+.figure-label {
+  display: block;
+  font-size: var(--t-micro);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-head);
+  color: var(--ink-40);
+  margin-bottom: var(--s-2);
+}
+
+.figure-value {
+  display: block;
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.35rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.figure-note {
+  display: block;
+  font-size: var(--t-small);
+  color: var(--ink-60);
+  margin-top: var(--s-1);
+}
+
+@media (min-width: 48rem) {
+  .figures {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .figure:nth-child(-n + 4) {
+    border-top: none;
+  }
+  .figure:nth-child(odd) {
+    border-left: 1px solid var(--rule);
+  }
+  .figure:first-child {
+    border-left: none;
+  }
+}
+
+/* ---- status ------------------------------------------------------------- */
+
+.pill {
+  display: inline-block;
+  font-size: var(--t-micro);
+  font-weight: 500;
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--rule-strong);
+  color: var(--ink-60);
+  white-space: nowrap;
+}
+
+.pill-good {
+  color: var(--credit);
+  border-color: var(--credit);
+}
+
+.pill-watch {
+  color: var(--debit);
+  border-color: var(--debit);
+}
+
+.pill-bad {
+  color: var(--bad-ink);
+  border-color: var(--danger);
+}
+
+/* Demo rows say so. The marker is `payments.is_demo`, a column no production
+   write path can set (5B-2), so this is a fact rather than the string
+   convention it used to be. Still stated quietly: it qualifies a row, it is
+   not the row's outcome. */
+.pill-demo {
+  color: var(--ink-40);
+  border-style: dashed;
+}
+
+/* ---- authority ---------------------------------------------------------- */
+
+/*
+ * Two real numbers, drawn to scale. Not a chart: there is no series, no time
+ * axis and nothing inferred — it is spent over cap, which is the one ratio an
+ * operator is actually asking about.
+ */
+.authority {
+  min-width: 8rem;
+}
+
+.authority-figures {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.authority-track {
+  display: block;
+  height: 3px;
+  margin-top: var(--s-2);
+  background: var(--rule);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.authority-fill {
+  display: block;
+  height: 100%;
+  background: var(--ink-60);
+}
+
+.authority-fill.is-over {
+  background: var(--danger);
+}
+
+.authority-fill.is-spent {
+  background: var(--debit);
+}
+
+.authority-note {
+  display: block;
+  font-size: var(--t-micro);
+  color: var(--ink-60);
+  margin-top: var(--s-1);
+  white-space: nowrap;
+}
+
+.authority-note.is-over {
+  color: var(--bad-ink);
+  font-weight: 500;
+}
+
+.authority-note.is-spent {
+  color: var(--debit);
+  font-weight: 500;
+}
+
+/* ---- record ------------------------------------------------------------- */
+
+.record {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+}
+
+.record > div {
+  padding: var(--s-4);
+  border-top: 1px solid var(--rule);
+  border-left: 1px solid var(--rule);
+}
+
+.record > div:nth-child(-n + 2) {
+  border-top: none;
+}
+
+.record > div:nth-child(odd) {
+  border-left: none;
+}
+
+@media (min-width: 48rem) {
+  .record {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .record > div:nth-child(-n + 3) {
+    border-top: none;
+  }
+  .record > div:nth-child(odd) {
+    border-left: 1px solid var(--rule);
+  }
+  .record > div:nth-child(3n + 1) {
+    border-left: none;
+  }
+}
+
+.record dt {
+  font-size: var(--t-micro);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-head);
+  color: var(--ink-40);
+  margin-bottom: var(--s-2);
+}
+
+.record dd {
+  margin: 0;
+  font-size: var(--t-body);
+}
+
+.record dd.mono {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- attention ---------------------------------------------------------- */
+
+.attention {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.attention > li {
+  border-top: 1px solid var(--rule);
+}
+
+.attention > li:first-child {
+  border-top: none;
+}
+
+.attention a {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+  padding: var(--s-4);
+  color: inherit;
+  text-decoration: none;
+}
+
+.attention a:hover {
+  background: var(--surface);
+}
+
+.attention-what {
+  font-weight: 500;
+}
+
+.attention-why {
+  color: var(--ink-60);
+  font-size: var(--t-small);
+}
+
+.attention-go {
+  margin-left: auto;
+  color: var(--live);
+  font-size: var(--t-small);
+  white-space: nowrap;
+}
+
+/* ---- actions ------------------------------------------------------------ */
+
+.btn {
+  font: inherit;
+  font-size: var(--t-small);
+  font-weight: 500;
+  padding: var(--s-1) var(--s-3);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-sm);
+  background: #fff;
+  color: var(--ink);
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+
+.btn-primary {
+  border-color: var(--live);
+  background: var(--live);
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--live-hover);
+  border-color: var(--live-hover);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ---- secondary surfaces ------------------------------------------------- */
+
+/*
+ * Exports used to be a panel with equal billing on the overview. It is a thing
+ * an operator does occasionally and deliberately, so it collapses — and as a
+ * <details> it needs no JavaScript and is keyboard-operable for free.
+ */
+.disclosure {
+  border-top: 1px solid var(--rule);
+  padding-top: var(--s-4);
+}
+
+.disclosure > summary {
+  font-size: var(--t-eyebrow);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-eyebrow);
+  color: var(--ink-60);
+  cursor: pointer;
+}
+
+.disclosure > summary:hover {
+  color: var(--ink);
+}
+
+.disclosure-body {
+  padding-top: var(--s-4);
+}
+
+.row-link {
+  color: var(--ink);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.row-link:hover {
+  text-decoration: underline;
+}
+
+.note {
+  font-size: var(--t-small);
+  color: var(--ink-60);
+  margin: var(--s-3) 0 0;
+  max-width: 62ch;
+}
+
+.notice {
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--rule-strong);
+  background: var(--surface);
+  font-size: var(--t-body);
+  margin: 0 0 var(--s-5);
+}
+
+.notice-bad {
+  border-color: var(--danger);
+  background: var(--bad-surface);
+  color: var(--bad-ink);
+}
+
+.crumb {
+  margin: 0 0 var(--s-5);
+  font-size: var(--t-small);
+}
+
+.attention-static {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+  padding: var(--s-4);
+}
+
+.cell-note {
+  display: block;
+  font-size: var(--t-micro);
+  color: var(--ink-60);
+  margin-top: var(--s-1);
+  white-space: normal;
+}
