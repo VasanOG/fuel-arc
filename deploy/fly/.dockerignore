@@ -1,0 +1,21 @@
+# An ALLOWLIST: everything is excluded, then only the code the demo runs is
+# let in. So no database, no .env, no key, no tool cache and no dashboard can
+# reach the image by accident, whatever is lying around the working folder.
+*
+!package.json
+!package-lock.json
+!tsconfig.json
+!src/
+!src/**
+!demo/
+!demo/**
+!scripts/arc-demo/
+!scripts/arc-demo/**
+!deploy/fly/entrypoint.sh
+**/node_modules
+**/.env*
+**/*.db
+**/*.db.*
+**/*.key
+**/*.pem
+**/secrets/

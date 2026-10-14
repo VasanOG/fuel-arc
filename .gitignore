@@ -1,12 +1,36 @@
 node_modules/
-dist/
 .env
-.env.local
-dashboard/.env.local
+.env.*
+!.env.example
+# The dashboard's template, which fuel.ts tells a new collaborator to copy.
+!dashboard/.env.local.example
+CLAUDE.local.md
+.next/
+.DS_Store
+*.log
+secrets/
+*.pem
+*.key
+*.p8
+*.p12
 *.db
-*.db-wal
+*.db-journal
 *.db-shm
+*.db-wal
+# Snapshots of the database, whatever suffix whoever took them chose.
+*.db.*
 *.bak
 *.backup
+# Machine-local agent tooling: caches and tuned state, never project work.
+.claude-flow/
+graphify-out/
+agentdb.rvf*
+.claude/proven-config.json
+.claude/.proven-config-version
+.agents/
+.swarm/
+# Downloaded tools, not source.
+ngrok-*.zip
+# Arc founder demo: keys and its own database live in ~/.fuel-arc, never here.
 .fuel-arc/
-.DS_Store
+tsconfig.tsbuildinfo

@@ -1,0 +1,92 @@
+#!/bin/bash
+# Starts the Arc founder demo inside the Fly machine, mirroring
+# scripts/arc-demo/start.sh: each process gets a minimal environment with
+# only what it needs, built here with `env -i`, and runs as its own user.
+#
+# Secrets arrive as environment variables (fly secrets):
+#   ARC_AGENT_KEY   the demo agent's private key     -> /home/api/.fuel-arc/agent.key  (api only)
+#   ARC_SHOP_KEY    the shop wallet's private key    -> /home/shop/.fuel-arc/shop.key  (shop only)
+#   FUEL_API_KEY    Fuel's operator key              -> approver only
+#   FUEL_AGENT_KEY  Fuel's agent key                 -> api (to check callers) and door
+#   FUEL_TOKEN_ENCRYPTION_KEY                        -> api
+#
+# The two chain keys are written to 0600 files on the machine's root
+# filesystem (ephemeral, recreated at every boot), never on the /data volume,
+# which Fly snapshots. They are unset from this shell as soon as written.
+#
+# SAFE MODE: with ARC_AGENT_KEY and ARC_SHOP_KEY absent, the API starts
+# unarmed (every demo payment is refused as "not armed" before any request)
+# and the shop does not start. Everything else runs, so the door, approver
+# and API can be tested publicly with no key on the machine.
+#
+# If any process exits, this script exits, and Fly restarts the machine.
+set -euo pipefail
+cd /app
+COMMIT="${FUEL_COMMIT:-unknown}"
+echo "[entrypoint] commit $COMMIT"
+
+for v in FUEL_API_KEY FUEL_AGENT_KEY FUEL_TOKEN_ENCRYPTION_KEY; do
+  if [ -z "${!v:-}" ]; then echo "[entrypoint] $v is not set; not starting"; exit 1; fi
+done
+if [ "$FUEL_API_KEY" = "$FUEL_AGENT_KEY" ]; then echo "[entrypoint] the two Fuel keys are equal; not starting"; exit 1; fi
+
+# Key folders: 0700, owned by the one user that may read them (src/payments/arc-demo.ts, demo/arc-shop/server.ts check both).
+install -d -m 700 -o api -g fuel /home/api/.fuel-arc
+install -d -m 700 -o shop -g fuel /home/shop/.fuel-arc
+install -d -m 700 -o tryit -g fuel /home/tryit/.fuel-arc
+ARMED=0
+if [ -n "${ARC_AGENT_KEY:-}" ] && [ -n "${ARC_SHOP_KEY:-}" ]; then
+  (umask 077; printf '%s\n' "$ARC_AGENT_KEY" > /home/api/.fuel-arc/agent.key; printf '%s\n' "$ARC_SHOP_KEY" > /home/shop/.fuel-arc/shop.key)
+  chown api:fuel /home/api/.fuel-arc/agent.key; chown shop:fuel /home/shop/.fuel-arc/shop.key
+  ARMED=1
+  echo "[entrypoint] armed: both chain keys present"
+else
+  echo "[entrypoint] SAFE MODE: no chain keys; the API runs unarmed and the shop does not start"
+fi
+unset ARC_AGENT_KEY ARC_SHOP_KEY
+
+DB=/data/fuel-arc.db
+# A database copied up while the previous boot was running lands as
+# .incoming (deploy/fly/README.md); it replaces the live one here, before the
+# API opens anything, so a half-written copy is never opened mid-run.
+if [ -f "$DB.incoming" ]; then
+  echo "[entrypoint] installing $DB.incoming as the demo database"
+  mv -f "$DB.incoming" "$DB"
+  rm -f "$DB-wal" "$DB-shm" "$DB-journal"
+fi
+touch "$DB" && chown api:fuel "$DB" && chmod 600 "$DB"
+LOGDIR=/home/tryit/.fuel-arc
+
+BASE=(PATH="$PATH" TMPDIR=/tmp DOTENV_CONFIG_PATH=/dev/null NODE_ENV=production FUEL_COMMIT="$COMMIT")
+pids=()
+
+# Fuel's API: the demo database, Fuel's own keys, and (armed) the agent's chain key file.
+env -i "${BASE[@]}" HOME=/home/api FUEL_DB_PATH="$DB" PORT=3200 X402_PAY_TO=0x0000000000000000000000000000000000000402 \
+  FUEL_API_KEY="$FUEL_API_KEY" FUEL_AGENT_KEY="$FUEL_AGENT_KEY" FUEL_TOKEN_ENCRYPTION_KEY="$FUEL_TOKEN_ENCRYPTION_KEY" \
+  $([ "$ARMED" = 1 ] && echo FUEL_ARC_DEMO_KEY_FILE=/home/api/.fuel-arc/agent.key) \
+  runuser -u api -- node --import tsx src/server.ts &
+pids+=($!)
+
+if [ "$ARMED" = 1 ]; then
+  env -i "${BASE[@]}" HOME=/home/shop ARC_SHOP_KEY_FILE=/home/shop/.fuel-arc/shop.key PORT=3210 \
+    runuser -u shop -- node --import tsx demo/arc-shop/server.ts &
+  pids+=($!)
+fi
+
+# The approver: the operator key, loopback only.
+env -i "${BASE[@]}" HOME=/home/tryit FUEL_API_KEY="$FUEL_API_KEY" PORT=3230 \
+  runuser -u tryit -- node --import tsx demo/try-it/approver-server.ts &
+pids+=($!)
+
+# The door: the agent key only, on all interfaces (the Fly proxy is the only way in).
+env -i "${BASE[@]}" HOME=/home/tryit FUEL_AGENT_KEY="$FUEL_AGENT_KEY" PORT=3220 HOST=0.0.0.0 \
+  TRYIT_TRUST_FLY_CLIENT_IP=1 TRYIT_ALLOWED_ORIGIN="${TRYIT_ALLOWED_ORIGIN:-https://vasanog.github.io}" \
+  TRYIT_PAUSE_FILE="$LOGDIR/tryit.paused" TRYIT_LOG_FILE="$LOGDIR/tryit-log.jsonl" \
+  runuser -u tryit -- node --import tsx demo/try-it/door-server.ts &
+pids+=($!)
+
+unset FUEL_API_KEY FUEL_AGENT_KEY FUEL_TOKEN_ENCRYPTION_KEY
+trap 'kill "${pids[@]}" 2>/dev/null' EXIT
+wait -n
+echo "[entrypoint] a process exited; stopping so Fly restarts the machine"
+exit 1

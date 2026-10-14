@@ -15,6 +15,12 @@
  *   AL-6  not armed means refused, before any request or reservation
  *   AL-7  the shop: HEAD refused, a conditional paid request still gets the
  *         full body, its settler writes nothing but transferWithAuthorization
+ *   AL-8  the Try-it door (demo/try-it/): a visitor can choose one of three
+ *         fixed items and nothing else about what Fuel is asked; the door's
+ *         own stops (pause, daily cap, per-visitor limit, low or unknown
+ *         balance) close it before anything reaches Fuel; the approver
+ *         approves only the demo agent's pending shop-priced requests; the
+ *         door holds the agent key only
  *
  * NOTHING HERE TOUCHES A CHAIN OR A REAL KEY. HOME is a temp folder before any
  * Arc code is imported, so ~/.fuel-arc/ is a throwaway folder and the real one
@@ -598,6 +604,234 @@ async function main(): Promise<void> {
         ["another network", okPayload, { ...req, network: pay.ALLOWED_NETWORK }],
       ] as const) {
         assert(refusalFor(payload as never, r as never, shopTerms) !== null, `AL-7: the shop's guard refuses ${what} before the library sees it`);
+      }
+    }
+
+    /* ====================================================================== */
+    console.log("\n== AL-8: the Try-it door and its approver, against a fake Fuel");
+    {
+      const policy = await import("../demo/try-it/policy.js");
+      const { createDoorApp } = await import("../demo/try-it/door.js");
+      const { createApproverApp } = await import("../demo/try-it/approver.js");
+
+      // A fake Fuel API that records what it is asked and answers what the test says.
+      const asked: { path: string; auth: string | undefined; body: Record<string, unknown> }[] = [];
+      let payReply: { status: number; json: Record<string, unknown> } = { status: 200, json: { paid: "0.001", transaction: `0x${"ab".repeat(32)}` } };
+      let approvalReply: { status: number; json: Record<string, unknown> } = { status: 200, json: {} };
+      const fakeFuel = express();
+      fakeFuel.use(express.json());
+      fakeFuel.post("/api/agents/:id/pay", (req, res) => {
+        asked.push({ path: req.path, auth: req.headers.authorization, body: req.body });
+        res.status(payReply.status).json(payReply.json);
+      });
+      fakeFuel.get("/api/approvals/:id", (req, res) => {
+        asked.push({ path: req.path, auth: req.headers.authorization, body: {} });
+        res.status(approvalReply.status).json(approvalReply.json);
+      });
+      fakeFuel.post("/api/approvals/:id/approve", (req, res) => {
+        asked.push({ path: req.path, auth: req.headers.authorization, body: {} });
+        res.json({ status: "approved" });
+      });
+      const fuelServer = fakeFuel.listen(0, "127.0.0.1");
+      await new Promise((r) => fuelServer.once("listening", r));
+      const fuelUrl = `http://127.0.0.1:${(fuelServer.address() as AddressInfo).port}`;
+
+      const approverServer = createApproverApp({ fuelUrl, operatorKey: "op-test", log: () => {} }).listen(0, "127.0.0.1");
+      await new Promise((r) => approverServer.once("listening", r));
+      const approverUrl = `http://127.0.0.1:${(approverServer.address() as AddressInfo).port}`;
+
+      const pauseFile = join(home, "tryit.paused");
+      const logFile = join(home, "tryit-log.jsonl");
+      const shopUrl = "http://127.0.0.1:9/demo-shop";
+      const origin = "https://judges.example";
+      let balances: ReturnType<typeof policy.doorVerdict> extends never ? never : import("../demo/try-it/policy.js").Balances | null = { agentBaseUnits: 5_000_000n, shopBaseUnits: 2_000_000n, readAt: Date.now() };
+      const openDoor = (): import("node:http").Server => {
+        const app = createDoorApp({
+          fuelUrl, agentKey: "ag-test", shopUrl, approverUrl, allowedOrigin: origin, pauseFile, logFile,
+          balances: () => balances,
+          clientAddress: (req) => String(req.headers["x-test-client"] ?? "anon"),
+          log: () => {},
+        });
+        return app.listen(0, "127.0.0.1");
+      };
+      let doorServer = openDoor();
+      await new Promise((r) => doorServer.once("listening", r));
+      let doorUrl = `http://127.0.0.1:${(doorServer.address() as AddressInfo).port}`;
+      const call = async (method: string, path: string, body?: unknown, headers: Record<string, string> = {}) => {
+        const res = await fetch(`${doorUrl}${path}`, { method, headers: { "content-type": "application/json", "x-test-client": "judge-1", ...headers }, body: body === undefined ? undefined : JSON.stringify(body) });
+        return { status: res.status, json: (await res.json().catch(() => ({}))) as Record<string, unknown>, headers: res.headers };
+      };
+
+      try {
+        const status = await call("GET", "/try/status");
+        assert(status.status === 200 && status.json.open === true, "AL-8: (control) the door opens with healthy balances and no pause file");
+        assertEqual((status.json.items as unknown[]).length, 3, "AL-8: the door offers exactly three items");
+
+        // Who the visitor controls: the item. Nothing else.
+        asked.length = 0;
+        const paid = await call("POST", "/try/buy", { item: "basic", url: "http://evil.example/", agentId: "someone-else", approvalRequestId: "x", amount: "999" });
+        assertEqual(paid.json.outcome, "paid", "AL-8: buying the basic item reports Fuel's 'paid'");
+        assertEqual(asked.length, 1, "AL-8: exactly one request reached Fuel");
+        assertEqual(asked[0]!.path, `/api/agents/${chainMod.MAINNET_DEMO.agentId}/pay`, "AL-8: it was a payment by the demo agent, by its literal id, whatever the visitor sent");
+        assertEqual(asked[0]!.auth, "Bearer ag-test", "AL-8: with the agent key");
+        assertEqual(JSON.stringify(asked[0]!.body), JSON.stringify({ url: `${shopUrl}/item/basic` }), "AL-8: and the body named the shop's own basic item and nothing else: no visitor URL, amount or approval id");
+        assertEqual(paid.json.explorerUrl, `${chain.explorerUrl}/tx/0x${"ab".repeat(32)}`, "AL-8: a paid answer links the transaction on the explorer");
+
+        for (const bad of ["constructor", "__proto__", "basic/../ceiling", "/item/basic", "", 1, null, ["basic"]]) {
+          asked.length = 0;
+          const r = await call("POST", "/try/buy", { item: bad });
+          assert(r.status === 400 && asked.length === 0, `AL-8: item ${JSON.stringify(bad)} is refused with 400 and nothing reaches Fuel`);
+        }
+        for (const [item, path] of [["unusual", "/item/unusual"], ["ceiling", "/item/ceiling"]] as const) {
+          asked.length = 0;
+          await call("POST", "/try/buy", { item }, { "x-test-client": `judge-${item}` });
+          assertEqual((asked[0]!.body as { url: string }).url, `${shopUrl}${path}`, `AL-8: ${item} pays the shop's ${path}`);
+        }
+
+        // Fuel's other answers, in the page's words.
+        for (const [what, reply, outcome, httpStatus] of [
+          ["429", { status: 429, json: { spentInWindow: "0.011", limit: "0.02", windowSeconds: 60, retryAfterSeconds: 42 } }, "refused-rate-limit", 200],
+          ["402 cap", { status: 402, json: { error: "cap", scope: "agent", spent: "1", spendCap: "1" } }, "refused-cap", 200],
+          ["423", { status: 423, json: {} }, "refused-frozen", 200],
+          ["502", { status: 502, json: { error: "Payment could not be completed." } }, "failed", 502],
+        ] as const) {
+          payReply = reply as typeof payReply;
+          const r = await call("POST", "/try/buy", { item: "basic" }, { "x-test-client": `judge-${what}` });
+          assert(r.json.outcome === outcome && r.status === httpStatus, `AL-8: Fuel's ${what} is reported as ${outcome}`);
+          assertEqual(r.json.transaction, null, `AL-8: and ${what} carries no transaction`);
+        }
+
+        // Held, then completed: the approver is asked, and only for an id this door received.
+        asked.length = 0;
+        payReply = { status: 202, json: { status: "awaiting_approval", message: "held", approvalRequestId: "11111111-1111-4111-8111-111111111111", scope: "anomaly", amount: "0.005" } };
+        const heldR = await call("POST", "/try/buy", { item: "unusual" }, { "x-test-client": "judge-h" });
+        assert(heldR.json.outcome === "held" && heldR.json.approvalRequestId === "11111111-1111-4111-8111-111111111111", "AL-8: Fuel's 202 is reported as held, with the approval id");
+
+        asked.length = 0;
+        const unknown = await call("POST", "/try/complete", { approvalRequestId: "22222222-2222-4222-8222-222222222222" }, { "x-test-client": "judge-h" });
+        assert(unknown.status === 404 && asked.length === 0, "AL-8: completing an approval id this door never received is refused; neither the approver nor Fuel is asked");
+
+        approvalReply = { status: 200, json: { agentId: chainMod.MAINNET_DEMO.agentId, amountBaseUnits: "5000", amount: "0.005", status: "pending" } };
+        payReply = { status: 200, json: { paid: "0.005", transaction: `0x${"cd".repeat(32)}` } };
+        asked.length = 0;
+        const done = await call("POST", "/try/complete", { approvalRequestId: "11111111-1111-4111-8111-111111111111" }, { "x-test-client": "judge-h" });
+        assertEqual(done.json.outcome, "paid", "AL-8: completing a held payment pays once approved");
+        assertEqual(asked.map((a) => a.path).join(" "), `/api/approvals/11111111-1111-4111-8111-111111111111 /api/approvals/11111111-1111-4111-8111-111111111111/approve /api/agents/${chainMod.MAINNET_DEMO.agentId}/pay`, "AL-8: the approver read the request, approved it, and then the door paid with it");
+        assertEqual(asked[0]!.auth, "Bearer op-test", "AL-8: the approver used the operator key");
+        assertEqual(asked[2]!.auth, "Bearer ag-test", "AL-8: the door used the agent key");
+        assertEqual(JSON.stringify(asked[2]!.body), JSON.stringify({ url: `${shopUrl}/item/unusual`, approvalRequestId: "11111111-1111-4111-8111-111111111111" }), "AL-8: the completed payment is for the item that was held");
+        const again = await call("POST", "/try/complete", { approvalRequestId: "11111111-1111-4111-8111-111111111111" }, { "x-test-client": "judge-h" });
+        assertEqual(again.status, 404, "AL-8: a completed id cannot be completed twice");
+
+        // The approver's own refusals, each before Fuel is asked to approve.
+        for (const [what, reply, status] of [
+          ["another agent's request", { status: 200, json: { agentId: "not-the-demo-agent", amountBaseUnits: "5000", status: "pending" } }, 503],
+          ["a request for an amount no item costs", { status: 200, json: { agentId: chainMod.MAINNET_DEMO.agentId, amountBaseUnits: "999", status: "pending" } }, 503],
+          ["a request that is no longer pending", { status: 200, json: { agentId: chainMod.MAINNET_DEMO.agentId, amountBaseUnits: "5000", status: "approved" } }, 409],
+          ["a request Fuel does not know", { status: 404, json: {} }, 503],
+        ] as const) {
+          payReply = { status: 202, json: { approvalRequestId: "33333333-3333-4333-8333-333333333333", message: "held" } };
+          await call("POST", "/try/buy", { item: "unusual" }, { "x-test-client": `judge-${status}-${what.length}` });
+          approvalReply = reply as typeof approvalReply;
+          asked.length = 0;
+          const r = await call("POST", "/try/complete", { approvalRequestId: "33333333-3333-4333-8333-333333333333" }, { "x-test-client": `judge-${status}-${what.length}` });
+          assertEqual(r.status, status, `AL-8: the approver refuses ${what}`);
+          assert(!asked.some((a) => a.path.endsWith("/approve") || a.path.endsWith("/pay")), `AL-8: ${what} -> nothing was approved and nothing was paid`);
+        }
+        const direct = await fetch(`${approverUrl}/approve`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ approvalRequestId: "not-an-id" }) });
+        assertEqual(direct.status, 400, "AL-8: the approver takes an id and nothing else");
+        assertEqual((await fetch(`${approverUrl}/agents`, { method: "POST" })).status, 404, "AL-8: the approver has no other route");
+
+        // The door's own stops: pause, balances, daily cap, per-visitor. Each closes before Fuel is asked.
+        payReply = { status: 200, json: { paid: "0.001", transaction: `0x${"ab".repeat(32)}` } };
+        writeFileSync(pauseFile, "");
+        asked.length = 0;
+        const paused = await call("POST", "/try/buy", { item: "basic" }, { "x-test-client": "judge-p" });
+        assert(paused.status === 503 && paused.json.closedReason === "paused" && asked.length === 0, "AL-8: the pause file closes the door; nothing reaches Fuel");
+        assertEqual((await call("GET", "/try/status")).json.closedReason, "paused", "AL-8: and the status says why");
+        rmSync(pauseFile);
+        assertEqual((await call("GET", "/try/status")).json.open, true, "AL-8: (control) removing the pause file reopens it");
+
+        for (const [what, b, reason] of [
+          ["no balance read yet", null, "balance-unknown"],
+          ["a balance read older than ten minutes", { agentBaseUnits: 5_000_000n, shopBaseUnits: 2_000_000n, readAt: Date.now() - policy.TRY_BALANCE_MAX_AGE_MS - 1 }, "balance-unknown"],
+          ["a shop wallet below $0.50", { agentBaseUnits: 5_000_000n, shopBaseUnits: policy.TRY_MIN_SHOP_BALANCE_BASE_UNITS - 1n, readAt: Date.now() }, "low-balance"],
+          ["an agent wallet below $0.05", { agentBaseUnits: policy.TRY_MIN_AGENT_BALANCE_BASE_UNITS - 1n, shopBaseUnits: 2_000_000n, readAt: Date.now() }, "low-balance"],
+        ] as const) {
+          balances = b;
+          asked.length = 0;
+          const r = await call("POST", "/try/buy", { item: "basic" }, { "x-test-client": `judge-b-${reason}-${what.length}` });
+          assert(r.status === 503 && r.json.closedReason === reason && asked.length === 0, `AL-8: ${what} closes the door (${reason}); nothing reaches Fuel`);
+        }
+        balances = { agentBaseUnits: 5_000_000n, shopBaseUnits: 2_000_000n, readAt: Date.now() };
+
+        for (let i = 1; i <= policy.TRY_VISITOR_LIMIT; i++) {
+          assertEqual((await call("POST", "/try/buy", { item: "basic" }, { "x-test-client": "judge-v" })).status, 200, `AL-8: (control) one visitor's attempt ${i} of ${policy.TRY_VISITOR_LIMIT} is forwarded`);
+        }
+        asked.length = 0;
+        const seventh = await call("POST", "/try/buy", { item: "basic" }, { "x-test-client": "judge-v" });
+        assert(seventh.status === 429 && seventh.json.closedReason === "visitor-limit" && asked.length === 0, "AL-8: the next attempt from the same visitor is refused and nothing reaches Fuel");
+        assertEqual((await call("POST", "/try/buy", { item: "basic" }, { "x-test-client": "judge-w" })).status, 200, "AL-8: another visitor is unaffected");
+
+        // The daily cap, and that a restart replays the log rather than forgetting it.
+        doorServer.close();
+        const today = new Date().toISOString();
+        const spentSoFar = policy.TRY_DAILY_CAP_BASE_UNITS - 10_000n - (policy.TRY_DAILY_CAP_BASE_UNITS % 10_000n);
+        const lines = Array.from({ length: Number(spentSoFar / 10_000n) }, () => JSON.stringify({ at: today, kind: "buy", item: "ceiling", amountUsd: "$0.010", outcome: "refused-rate-limit", message: "", transaction: null, explorerUrl: null, approvalRequestId: null }));
+        lines.push(JSON.stringify({ at: "2026-01-01T00:00:00.000Z", kind: "buy", item: "ceiling", amountUsd: "$0.010", outcome: "paid", message: "", transaction: null, explorerUrl: null, approvalRequestId: null }));
+        lines.push(JSON.stringify({ at: today, kind: "buy", item: "unusual", amountUsd: "$0.005", outcome: "held", message: "", transaction: null, explorerUrl: null, approvalRequestId: "44444444-4444-4444-8444-444444444444" }));
+        writeFileSync(logFile, `${lines.join("\n")}\n`);
+        doorServer = openDoor();
+        await new Promise((r) => doorServer.once("listening", r));
+        doorUrl = `http://127.0.0.1:${(doorServer.address() as AddressInfo).port}`;
+        const afterRestart = await call("GET", "/try/status");
+        assertEqual(afterRestart.json.forwardedTodayUsd, `$${(Number(spentSoFar + 5_000n) / 1e6).toFixed(3)}`, "AL-8: after a restart the door has replayed today's attempts (and not yesterday's), refusals counted at full price");
+        asked.length = 0;
+        const fits = await call("POST", "/try/buy", { item: "basic" }, { "x-test-client": "judge-d1" });
+        assertEqual(fits.status, 200, "AL-8: (control) an attempt that fits under the daily cap is forwarded");
+        asked.length = 0;
+        const over = await call("POST", "/try/buy", { item: "ceiling" }, { "x-test-client": "judge-d2" });
+        assert(over.status === 503 && over.json.closedReason === "daily-cap" && asked.length === 0, "AL-8: an attempt that would pass the daily cap is refused; nothing reaches Fuel");
+        approvalReply = { status: 200, json: { agentId: chainMod.MAINNET_DEMO.agentId, amountBaseUnits: "5000", status: "pending" } };
+        payReply = { status: 200, json: { paid: "0.005", transaction: `0x${"ef".repeat(32)}` } };
+        asked.length = 0;
+        const replayed = await call("POST", "/try/complete", { approvalRequestId: "44444444-4444-4444-8444-444444444444" }, { "x-test-client": "judge-d3" });
+        assert(replayed.status === 503 && replayed.json.closedReason === "daily-cap", "AL-8: completing counts against the cap too, and a held id survives a restart (it was found, then refused by the cap)");
+        assertEqual(asked.length, 0, "AL-8: so the approver was not asked");
+
+        // Browsers: one origin may call it, no other.
+        const allowed = await call("GET", "/try/status", undefined, { origin });
+        assertEqual(allowed.headers.get("access-control-allow-origin"), origin, "AL-8: the proof page's origin is allowed");
+        assertEqual(allowed.headers.get("access-control-allow-credentials"), null, "AL-8: without credentials");
+        asked.length = 0;
+        const other = await call("POST", "/try/buy", { item: "basic" }, { origin: "https://other.example", "x-test-client": "judge-o" });
+        assert(other.status === 403 && asked.length === 0, "AL-8: any other origin is refused before anything reaches Fuel");
+        assertEqual((await fetch(`${doorUrl}/try/buy`, { method: "OPTIONS", headers: { origin } })).status, 204, "AL-8: the preflight for the allowed origin succeeds");
+        assertEqual((await fetch(`${doorUrl}/api/agents`)).status, 404, "AL-8: the door has no route but its own three and /health");
+      } finally {
+        doorServer.close();
+        approverServer.close();
+        fuelServer.close();
+      }
+
+      // What the door's code may hold and say, read from source.
+      const doorSrc = code(join("demo", "try-it", "door.ts"));
+      const doorServerSrc = code(join("demo", "try-it", "door-server.ts"));
+      const approverServerSrc = code(join("demo", "try-it", "approver-server.ts"));
+      const tryIt = walk(join("demo", "try-it"), /\.ts$/).map(code).join("\n");
+      assert(/url: `\$\{options\.shopUrl\}\$\{TRY_ITEMS\[item\]\.path\}`/.test(doorSrc), "AL-8: the URL Fuel is asked to pay is the shop's origin plus the item's own path, from the table");
+      assert(!/req\.body[^\n]*url|url[^\n]*req\.body/.test(doorSrc), "AL-8: no request field reaches a URL");
+      assert(/if \(process\.env\.FUEL_API_KEY\) \{[\s\S]*?process\.exit\(1\)/.test(doorServerSrc), "AL-8: the door refuses to start if the operator key is in its environment");
+      assert(/\.listen\(port, "127\.0\.0\.1"/.test(approverServerSrc), "AL-8: the approver binds loopback by literal; no setting can widen it");
+      for (const name of ["FUEL_ARC_DEMO_KEY_FILE", "ARC_SHOP_KEY_FILE", "privateKeyToAccount", "signTypedData", "writeContract", "sendTransaction"]) {
+        assert(!tryIt.includes(name), `AL-8: nothing under demo/try-it/ names ${name}: the door holds no chain key and signs nothing`);
+      }
+      assertEqual(policy.TRY_DAILY_CAP_BASE_UNITS, 200_000n, "AL-8: the daily cap is $0.20");
+      assert(policy.TRY_DAILY_CAP_BASE_UNITS * 25n <= chainMod.ARC_LIFETIME_LIMIT_BASE_UNITS, "AL-8: at the daily cap, the lifetime budget lasts at least 25 days");
+      assertEqual(Object.keys(policy.TRY_ITEMS).join(","), "basic,unusual,ceiling", "AL-8: the three items are the shop's three");
+      for (const [name, item] of Object.entries(policy.TRY_ITEMS)) {
+        const price = SHOP_PRICES.find((p) => p.path === item.path);
+        assert(price !== undefined && BigInt(price.amount) === item.amountBaseUnits, `AL-8: the door's ${name} is the shop's ${item.path} at the shop's price`);
       }
     }
   } finally {

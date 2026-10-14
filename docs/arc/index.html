@@ -33,12 +33,22 @@
   ul { padding-left: 20px; max-width: 75ch; }
   .live { color: var(--paid); font-size: .85rem; white-space: nowrap; }
   .live-panel { color: var(--muted); font-size: .92rem; }
+  .try { background:var(--card); border:1px solid var(--line); padding: 16px; }
+  .try p { max-width: 80ch; }
+  #try-buttons { display:flex; flex-wrap:wrap; gap:10px; margin: 12px 0; }
+  .try button { font: inherit; padding: 10px 14px; border:1px solid var(--line); background:var(--bg); color:var(--ink); cursor:pointer; border-radius:6px; text-align:left; }
+  .try button small { display:block; color:var(--muted); font-size:.8rem; }
+  .try button:disabled { opacity:.5; cursor:default; }
+  .try-recent { padding-left: 20px; font-size:.92rem; }
+  .try-recent li.paid b { color: var(--paid); } .try-recent li.held b { color: var(--held); } .try-recent li.refused b { color: var(--refused); }
+  .try-when { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .try-note { color: var(--muted); font-size:.85rem; }
 </style>
 </head>
 <body>
 <main>
 <h1>Fuel on Arc: governed agent payments on Arc mainnet</h1>
-<p class="lead">Fuel is a wallet and spend-control layer for AI agents. Here, one agent pays for items in real USDC on Arc mainnet, and every payment passes Fuel's controls first: spend caps, a hold for unusual amounts that a person must approve, a rate limit, a freeze switch, and a ledger of every attempt.</p>
+<p class="lead">Fuel is a wallet and spend-control layer for AI agents. Here, one agent pays for items in real USDC on Arc mainnet, and every payment passes Fuel's controls first: spend caps, a hold for unusual amounts that a person must approve, a rate limit, a freeze switch, and a ledger of every attempt it reserves budget for.</p>
 <p class="note"><strong>Who is who.</strong> The agent, its wallet, the shop and the shop's wallet are all mine (the founder of Fuel). Every payment below moves my own USDC from my agent's wallet to my shop's wallet. The shop is a three-item demo I operate so the controls have something real to pay for. No customer funds are involved.</p>
 
 <h2>At a glance</h2>
@@ -57,6 +67,15 @@
   <li>Shop wallet (mine): <a href="https://explorer.arc.io/address/0x3ddC6a2d414e658EdC3462fF97F963C81Fca64e7"><code>0x3ddC6a2d414e658EdC3462fF97F963C81Fca64e7</code></a> <span class="live" data-balance="0x3ddC6a2d414e658EdC3462fF97F963C81Fca64e7"></span></li>
   <li>Network: Arc mainnet, chain id 5042. USDC at <code>0x3600000000000000000000000000000000000000</code>; Arc charges its network fees in USDC too, paid here by the shop's wallet when it settles each payment.</li>
 </ul>
+
+<h2>Try it yourself</h2>
+<section id="try-it" class="try">
+  <p>Press a button and the demo agent asks Fuel, right now, to pay my shop for that item in real USDC on Arc mainnet. Fuel's controls decide, exactly as for the rows below: an ordinary payment is paid and settled within seconds; an unusual amount is held until it is approved; too much too fast is refused. The agent can only ever pay my own shop, at most $0.01 a time, and this page's button has a small daily budget of its own.</p>
+  <p id="try-status" class="live-panel">Checking whether the live demo is open…</p>
+  <div id="try-buttons"></div>
+  <ol id="try-recent" class="try-recent"></ol>
+  <p class="try-note">Attempts made through this page appear above as they happen; the ledger table below is regenerated from Fuel's database and may lag behind.</p>
+</section>
 
 <h2>From Fuel's ledger</h2>
 <p>Every attempt Fuel recorded for this agent, read from the demo instance's database. A paid row links to its transaction on the Arc explorer; a held or refused row has no transaction, because Fuel stopped it before a signature existed.</p>
@@ -91,7 +110,7 @@
   <li>Exactly one agent may pay on Arc. It is named in code by its id, its company's id and its wallet address. Every other agent and company in Fuel stays on test money (Base Sepolia), with every testnet guard unchanged.</li>
   <li>That agent's signer signs only a USDC transfer on Arc, from its own wallet, to my shop's wallet, of at most $0.01, and only while its lifetime total stays at or under $5.00.</li>
   <li>The shop settles each payment itself, submitting the signed transfer to Arc, and its settler can submit nothing else.</li>
-  <li>An automated test suite (<code>scripts/verify-arc-lock.ts</code>, run on every change) checks all of the above. Before going live, each part of the lock was also deliberately broken, one way at a time, and each break was caught by its own check.</li>
+  <li>An automated test suite (<code>scripts/verify-arc-lock.ts</code>, run by <code>npm test</code> before a change ships) checks all of the above. Before going live, each part of the lock was also deliberately broken, one way at a time, and each break was caught by its own check.</li>
 </ul>
 
 <h2>Download</h2>
@@ -131,5 +150,6 @@
   }).catch(() => { status.textContent = "Could not reach " + "Arc mainnet" + " from your browser; the explorer links below still work."; });
 })();
 </script>
+<script src="try-it.js" defer></script>
 </body>
 </html>
