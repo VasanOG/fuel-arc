@@ -39,7 +39,7 @@ import { DatabaseSync } from "node:sqlite";
 import { ARC_LIFETIME_LIMIT_BASE_UNITS, ARC_MAX_PER_PAYMENT_BASE_UNITS, ARC_TESTNET, MAINNET_DEMO } from "../../src/payments/arc-chain.js";
 
 const args = process.argv.slice(2);
-const repo = args.includes("--repo") ? args[args.indexOf("--repo") + 1]! : "https://github.com/VasanOG/fuel";
+const repo = args.includes("--repo") ? args[args.indexOf("--repo") + 1]! : "https://github.com/VasanOG/fuel-arc";
 
 const chain = MAINNET_DEMO.chain;
 const rehearsal = chain.chainId === ARC_TESTNET.chainId;
@@ -210,7 +210,7 @@ const html = `<!doctype html>
 <h2>At a glance</h2>
 <div class="facts">
   <div class="fact"><b>${paid.length}</b><span>payments that moved money (${usd(paidTotal)} in total)</span></div>
-  <div class="fact"><b>${held.length}</b><span>held for a person to approve (${held.filter((h) => h.status === "consumed").length} approved and then paid)</span></div>
+  <div class="fact"><b>${held.length}</b><span>held for approval (${held.filter((h) => h.status === "consumed").length} then approved with the operator key and paid)</span></div>
   <div class="fact"><b>${refusedRows.length + noLedgerRow.length}</b><span>refused before anything was signed</span></div>
   ${unconfirmed.length ? `<div class="fact"><b>${unconfirmed.length}</b><span>signed but not confirmed by the shop: money may have moved, so Fuel counts it as spent</span></div>` : ""}
   <div class="fact"><b>${usd(ARC_MAX_PER_PAYMENT_BASE_UNITS)} / ${usd(ARC_LIFETIME_LIMIT_BASE_UNITS)}</b><span>hard limits in code: per payment, and in total over the agent's life</span></div>
