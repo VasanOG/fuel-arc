@@ -13,7 +13,10 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # macOS, where the suite is developed and run before every push. One check
+    # (TH-10 in scripts/verify-runner.ts) tests how the local pre-push hook
+    # handles an interrupt, and that is shell-specific: it fails under Linux's sh.
+    runs-on: macos-latest
     timeout-minutes: 20
     env:
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
