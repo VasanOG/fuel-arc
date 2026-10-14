@@ -5,12 +5,26 @@ pay for something; before anything is signed, Fuel checks the agent's own
 spend cap, then its team's and its company's, whether the amount is unusual
 for that agent (and if so, holds it for a person to approve), whether the
 agent is spending too fast, and whether an operator has frozen it. Every
-attempt — paid, held, or refused — lands in a ledger, which rolls up into
-accounting exports.
+payment Fuel reserves budget for — paid, held, or refused — lands in a
+ledger, which rolls up into accounting exports. (A few refusals come before
+any reservation, a frozen agent for one; Fuel counts those instead.)
 
-This repository is a single-commit public snapshot of the branch built for
-**Arc Microgrants**: Fuel's payment controls, running for real, on Arc
-mainnet.
+This repository is a public snapshot of the branch built for **Arc
+Microgrants**: Fuel's payment controls, running for real, on Arc mainnet.
+
+[![npm test](https://github.com/VasanOG/fuel-arc/actions/workflows/test.yml/badge.svg)](https://github.com/VasanOG/fuel-arc/actions/workflows/test.yml)
+
+## Try it
+
+- **Proof page with a live Buy button:** https://vasanog.github.io/fuel-arc/arc/
+  Press Buy and the demo agent asks Fuel, right now, to pay my shop in real
+  USDC on Arc mainnet. Fuel pays, holds the payment for approval, or refuses.
+- **Fuel's own dashboard:** https://fuel-arc-demo.fly.dev — company
+  `default-company-neef`, email `judges@fuel.demo`, password
+  `fuel-arc-judge-bb3ddd` (a shared operator account for judges). Approve a
+  held payment under Approvals and the agent completes it within seconds.
+- How the live demo runs, and its limits: `deploy/fly/README.md` and
+  `demo/try-it/`.
 
 ## What's real, and what isn't — read this first
 
@@ -51,7 +65,8 @@ authorization). On Arc:
   but that one transfer function, to nowhere but its own wallet's expected
   counterpart.
 - **Settlement is fast enough to pay-per-call:** a $0.001 request is quoted,
-  signed, settled and confirmed inside a single HTTP round trip.
+  signed, settled and confirmed within one paid request (an x402 quote, then
+  the paid request).
 
 ## The proof page
 
@@ -96,10 +111,12 @@ npm test
 `npm test` runs twelve steps end to end, offline, against databases it builds
 and discards itself — no network access, no real credentials, no real money.
 The one most relevant here is `scripts/verify-arc-lock.ts`
-(`npm run verify-arc-lock` on its own): 169 checks that the one Arc agent is
+(`npm run verify-arc-lock` on its own): 278 checks that the one Arc agent is
 locked to its own id, company and wallet, that its signer will sign nothing
-but that one bounded transfer, and that the shop's settler can submit nothing
-else. Before the branch went live, each part of that lock was deliberately
+but that one bounded transfer, that the shop's settler can submit nothing
+else, that the public Try-it door lets a visitor choose an item and nothing
+more, and that its own stops close it before Fuel is asked. CI runs the full
+suite on every push. Before the branch went live, each part of that lock was deliberately
 broken, one way at a time, and each break was confirmed to fail its own named
 check — see `docs/testing.md` for the full account.
 
@@ -113,7 +130,8 @@ see `CLAUDE.md`'s non-negotiable rule.
 - `src/payments/arc-chain.ts` — every Arc constant, and the one agent allowed
   to use them, named by literal id.
 - `src/payments/arc-demo.ts` — the lock and the signer: what the Arc agent can
-  be made to sign, and the five checks that keep every other agent off Arc.
+  be made to sign, and the layers that keep every other agent off Arc (the
+  rail check itself lives in `src/payments/pay.ts`).
 - `demo/arc-shop/` — the shop and its settler.
 - `scripts/arc-demo/` — the runbook: generate keys, build the demo database,
   start/stop the demo, reconcile the ledger against the chain, publish the
