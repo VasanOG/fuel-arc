@@ -21,8 +21,11 @@ RUN groupadd -r fuel && \
 
 WORKDIR /app
 COPY package.json package-lock.json tsconfig.json ./
-# tsx is a devDependency, and the processes run under it, so install everything.
-RUN npm ci --ignore-scripts && npm cache clean --force
+# tsx is a devDependency, and the processes run under it, so install
+# everything. --include=dev is required: NODE_ENV=production (set above)
+# otherwise makes npm skip devDependencies, and every process then fails
+# with "Cannot find package 'tsx'".
+RUN npm ci --include=dev --ignore-scripts && npm cache clean --force && test -d node_modules/tsx
 COPY src ./src
 COPY demo ./demo
 COPY scripts/arc-demo ./scripts/arc-demo
