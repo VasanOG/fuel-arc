@@ -68,19 +68,37 @@ export function createDoorApp(options: DoorOptions): express.Express {
   const held = new Map<string, TryItem>();
   const recent: Attempt[] = [];
 
-  // Replay today's log so a restart cannot reset the daily cap or forget a held id.
+  /*
+   * THE LOG IS WRITTEN TWICE PER ATTEMPT: a "forwarding" line the moment the
+   * gate admits it, before Fuel is asked, and the result line after. The meter
+   * is replayed from the forwarding lines only, so what the cap counted and
+   * what a restart recounts are the same set, and an attempt cut off by a
+   * restart mid-call is still counted. The held map is replayed from result
+   * lines. A line that cannot be read is skipped: a bad line must not keep
+   * the door from starting, and skipping can only under-count the day, which
+   * the full-price counting of refusals more than covers.
+   */
   if (existsSync(options.logFile)) {
     for (const line of readFileSync(options.logFile, "utf8").split("\n").filter(Boolean)) {
-      let entry: Attempt & { day?: string };
       try {
-        entry = JSON.parse(line);
+        const entry = JSON.parse(line) as Partial<Omit<Attempt, "outcome">> & { outcome?: Attempt["outcome"] | "forwarding" };
+        const item = itemNamed(entry.item);
+        if (!item || typeof entry.at !== "string" || Number.isNaN(Date.parse(entry.at))) continue;
+        if (entry.outcome === "forwarding") {
+          if (utcDay(Date.parse(entry.at)) === utcDay(now())) meter.count(TRY_ITEMS[item].amountBaseUnits, now());
+        } else if (entry.outcome === "held" && typeof entry.approvalRequestId === "string") {
+          held.set(entry.approvalRequestId, item);
+        } else if ((entry.outcome === "paid" || entry.outcome === "refused-approval") && typeof entry.approvalRequestId === "string") {
+          held.delete(entry.approvalRequestId);
+        }
       } catch {
         continue;
       }
-      if (utcDay(Date.parse(entry.at)) === utcDay(now())) meter.count(TRY_ITEMS[entry.item].amountBaseUnits, now());
-      if (entry.outcome === "held" && entry.approvalRequestId) held.set(entry.approvalRequestId, entry.item);
-      if (entry.outcome === "paid" && entry.approvalRequestId) held.delete(entry.approvalRequestId);
     }
+  }
+
+  function forwarding(kind: Attempt["kind"], item: TryItem): void {
+    appendFileSync(options.logFile, `${JSON.stringify({ at: new Date(now()).toISOString(), kind, item, outcome: "forwarding" })}\n`, { mode: 0o600 });
   }
 
   function record(attempt: Attempt): void {
@@ -172,11 +190,16 @@ export function createDoorApp(options: DoorOptions): express.Express {
     meter.count(amount, now());
     return { ok: true };
   }
+  const admitAndLog = (req: Request, kind: Attempt["kind"], item: TryItem) => {
+    const gate = admit(req, TRY_ITEMS[item].amountBaseUnits);
+    if (gate.ok) forwarding(kind, item);
+    return gate;
+  };
 
   app.post("/try/buy", async (req, res) => {
     const item = itemNamed(req.body?.item);
     if (!item) return res.status(400).json({ error: "item must be basic, unusual or ceiling" });
-    const gate = admit(req, TRY_ITEMS[item].amountBaseUnits);
+    const gate = admitAndLog(req, "buy", item);
     if (!gate.ok) return res.status(gate.status).json(gate.body);
 
     let attempt: Attempt;
@@ -195,7 +218,7 @@ export function createDoorApp(options: DoorOptions): express.Express {
     const id = req.body?.approvalRequestId;
     const item = typeof id === "string" ? held.get(id) : undefined;
     if (!item) return res.status(404).json({ error: "that is not a payment this demo is holding" });
-    const gate = admit(req, TRY_ITEMS[item].amountBaseUnits);
+    const gate = admitAndLog(req, "complete", item);
     if (!gate.ok) return res.status(gate.status).json(gate.body);
 
     let approved: Response;
@@ -221,8 +244,16 @@ export function createDoorApp(options: DoorOptions): express.Express {
       log(`[try-it] complete ${String(id)}: ${(error as Error).message}`);
       attempt = describe("complete", item, { status: 0, json: {} });
     }
-    attempt.approvalRequestId = id as string;
-    if (attempt.outcome === "paid" || attempt.outcome === "refused-approval") held.delete(id as string);
+    // Fuel may answer a completion with a NEW hold (202): track that id, and
+    // keep the old one out of the map; otherwise the old id is what this
+    // attempt was about, and a paid or invalid-approval answer retires it.
+    if (attempt.outcome === "held" && attempt.approvalRequestId) {
+      held.delete(id as string);
+      held.set(attempt.approvalRequestId, item);
+    } else {
+      attempt.approvalRequestId = id as string;
+      if (attempt.outcome === "paid" || attempt.outcome === "refused-approval") held.delete(id as string);
+    }
     record(attempt);
     res.status(attempt.outcome === "failed" ? 502 : 200).json(attempt);
   });

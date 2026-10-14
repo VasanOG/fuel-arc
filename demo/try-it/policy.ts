@@ -26,7 +26,20 @@
  * Every refusal here is decided BEFORE a request leaves for Fuel, so a closed
  * door costs nothing and reserves nothing.
  */
-import { existsSync } from "node:fs";
+import { statSync } from "node:fs";
+
+/**
+ * Is the pause file there? Anything but a clean "no such file" counts as
+ * paused: a folder we cannot read must close the door, not open it.
+ */
+export function pauseFilePresent(path: string): boolean {
+  try {
+    statSync(path);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code !== "ENOENT";
+  }
+}
 
 /** The three items, by the only name a visitor may use. Paths are the shop's. */
 export const TRY_ITEMS = {
@@ -81,7 +94,7 @@ export function doorVerdict(state: {
   balances: Balances | null;
   now: number;
 }): Verdict {
-  if (existsSync(state.pauseFile)) return { open: false, reason: "paused", detail: "The live demo is paused by its operator." };
+  if (pauseFilePresent(state.pauseFile)) return { open: false, reason: "paused", detail: "The live demo is paused by its operator." };
   if (state.forwardedTodayBaseUnits + state.nextAmountBaseUnits > TRY_DAILY_CAP_BASE_UNITS) {
     return { open: false, reason: "daily-cap", detail: "Today's demo budget is used up. It resets at midnight UTC." };
   }

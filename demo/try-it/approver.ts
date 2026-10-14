@@ -54,6 +54,9 @@ export function createApproverApp(options: { fuelUrl: string; operatorKey: strin
     const a = found.json;
     if (a.agentId !== MAINNET_DEMO.agentId) return res.status(403).json({ error: "not the demo agent's request" });
     if (!PRICES.has(String(a.amountBaseUnits))) return res.status(403).json({ error: "not one of the shop's prices" });
+    // Already approved and not yet redeemed (the payment after an earlier
+    // approval failed, say): nothing to decide, and the door may go on to pay.
+    if (a.status === "approved") return res.json({ approved: true, approvalRequestId: id, already: true });
     if (a.status !== "pending") return res.status(409).json({ error: `request is ${String(a.status)}` });
 
     let decided;

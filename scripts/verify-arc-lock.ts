@@ -727,7 +727,7 @@ async function main(): Promise<void> {
         for (const [what, reply, status] of [
           ["another agent's request", { status: 200, json: { agentId: "not-the-demo-agent", amountBaseUnits: "5000", status: "pending" } }, 503],
           ["a request for an amount no item costs", { status: 200, json: { agentId: chainMod.MAINNET_DEMO.agentId, amountBaseUnits: "999", status: "pending" } }, 503],
-          ["a request that is no longer pending", { status: 200, json: { agentId: chainMod.MAINNET_DEMO.agentId, amountBaseUnits: "5000", status: "approved" } }, 409],
+          ["a request that is no longer pending", { status: 200, json: { agentId: chainMod.MAINNET_DEMO.agentId, amountBaseUnits: "5000", status: "consumed" } }, 409],
           ["a request Fuel does not know", { status: 404, json: {} }, 503],
         ] as const) {
           payReply = { status: 202, json: { approvalRequestId: "33333333-3333-4333-8333-333333333333", message: "held" } };
@@ -738,6 +738,15 @@ async function main(): Promise<void> {
           assertEqual(r.status, status, `AL-8: the approver refuses ${what}`);
           assert(!asked.some((a) => a.path.endsWith("/approve") || a.path.endsWith("/pay")), `AL-8: ${what} -> nothing was approved and nothing was paid`);
         }
+        // Already approved but never redeemed (the payment after approval failed): the approver lets the door go on and pay.
+        payReply = { status: 202, json: { approvalRequestId: "55555555-5555-4555-8555-555555555555", message: "held" } };
+        await call("POST", "/try/buy", { item: "unusual" }, { "x-test-client": "judge-again" });
+        approvalReply = { status: 200, json: { agentId: chainMod.MAINNET_DEMO.agentId, amountBaseUnits: "5000", status: "approved" } };
+        payReply = { status: 200, json: { paid: "0.005", transaction: `0x${"77".repeat(32)}` } };
+        asked.length = 0;
+        const retried = await call("POST", "/try/complete", { approvalRequestId: "55555555-5555-4555-8555-555555555555" }, { "x-test-client": "judge-again" });
+        assertEqual(retried.json.outcome, "paid", "AL-8: an approval already granted is not decided again; the door goes on to pay with it");
+        assert(!asked.some((a) => a.path.endsWith("/approve")), "AL-8: and nothing was approved twice");
         const direct = await fetch(`${approverUrl}/approve`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ approvalRequestId: "not-an-id" }) });
         assertEqual(direct.status, 400, "AL-8: the approver takes an id and nothing else");
         assertEqual((await fetch(`${approverUrl}/agents`, { method: "POST" })).status, 404, "AL-8: the approver has no other route");
@@ -777,15 +786,24 @@ async function main(): Promise<void> {
         doorServer.close();
         const today = new Date().toISOString();
         const spentSoFar = policy.TRY_DAILY_CAP_BASE_UNITS - 10_000n - (policy.TRY_DAILY_CAP_BASE_UNITS % 10_000n);
-        const lines = Array.from({ length: Number(spentSoFar / 10_000n) }, () => JSON.stringify({ at: today, kind: "buy", item: "ceiling", amountUsd: "$0.010", outcome: "refused-rate-limit", message: "", transaction: null, explorerUrl: null, approvalRequestId: null }));
-        lines.push(JSON.stringify({ at: "2026-01-01T00:00:00.000Z", kind: "buy", item: "ceiling", amountUsd: "$0.010", outcome: "paid", message: "", transaction: null, explorerUrl: null, approvalRequestId: null }));
+        // What the door writes: a "forwarding" line as each attempt is admitted, then its result line. Only forwarding lines count.
+        const lines = Array.from({ length: Number(spentSoFar / 10_000n) }, () => JSON.stringify({ at: today, kind: "buy", item: "ceiling", outcome: "forwarding" }));
+        lines.push(JSON.stringify({ at: today, kind: "buy", item: "ceiling", amountUsd: "$0.010", outcome: "refused-rate-limit", message: "", transaction: null, explorerUrl: null, approvalRequestId: null }));
+        lines.push(JSON.stringify({ at: "2026-01-01T00:00:00.000Z", kind: "buy", item: "ceiling", outcome: "forwarding" }));
+        lines.push("not json at all", JSON.stringify({ at: today, kind: "buy", item: "constructor", outcome: "forwarding" }), JSON.stringify({ at: "yesterday?", kind: "buy", item: "basic", outcome: "forwarding" }));
+        lines.push(JSON.stringify({ at: today, kind: "buy", item: "unusual", outcome: "forwarding" }));
         lines.push(JSON.stringify({ at: today, kind: "buy", item: "unusual", amountUsd: "$0.005", outcome: "held", message: "", transaction: null, explorerUrl: null, approvalRequestId: "44444444-4444-4444-8444-444444444444" }));
+        lines.push(JSON.stringify({ at: today, kind: "buy", item: "unusual", amountUsd: "$0.005", outcome: "held", message: "", transaction: null, explorerUrl: null, approvalRequestId: "66666666-6666-4666-8666-666666666666" }));
+        lines.push(JSON.stringify({ at: today, kind: "complete", item: "unusual", amountUsd: "$0.005", outcome: "refused-approval", message: "", transaction: null, explorerUrl: null, approvalRequestId: "66666666-6666-4666-8666-666666666666" }));
         writeFileSync(logFile, `${lines.join("\n")}\n`);
         doorServer = openDoor();
         await new Promise((r) => doorServer.once("listening", r));
         doorUrl = `http://127.0.0.1:${(doorServer.address() as AddressInfo).port}`;
         const afterRestart = await call("GET", "/try/status");
-        assertEqual(afterRestart.json.forwardedTodayUsd, `$${(Number(spentSoFar + 5_000n) / 1e6).toFixed(3)}`, "AL-8: after a restart the door has replayed today's attempts (and not yesterday's), refusals counted at full price");
+        assertEqual(afterRestart.json.forwardedTodayUsd, `$${(Number(spentSoFar + 5_000n) / 1e6).toFixed(3)}`, "AL-8: after a restart the door has replayed today's forwarded attempts (not yesterday's, not unreadable lines), refusals counted at full price");
+        asked.length = 0;
+        const retired = await call("POST", "/try/complete", { approvalRequestId: "66666666-6666-4666-8666-666666666666" }, { "x-test-client": "judge-d0" });
+        assert(retired.status === 404 && asked.length === 0, "AL-8: an id whose approval was found invalid before the restart stays retired");
         asked.length = 0;
         const fits = await call("POST", "/try/buy", { item: "basic" }, { "x-test-client": "judge-d1" });
         assertEqual(fits.status, 200, "AL-8: (control) an attempt that fits under the daily cap is forwarded");

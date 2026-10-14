@@ -1,7 +1,7 @@
 # The Arc demo on Fly.io: runbook
 
 One Fly machine runs Fuel's API, the founder's shop, the Try-it door and its
-approver, each as its own system user. Only the door (port 3220) faces the
+approver, each as its own system user (api, shop, tryit, approver). Only the door (port 3220) faces the
 internet, through Fly's proxy at `https://fuel-arc-demo.fly.dev`. The API,
 the shop and the approver listen on loopback inside the machine.
 
@@ -9,7 +9,7 @@ the shop and the approver listen on loopback inside the machine.
 internet ──HTTPS──> Fly proxy ──> door (user tryit, agent key only)
                                    ├──> Fuel API 127.0.0.1:3200 (user api: demo DB, agent chain key)
                                    │       └──> shop 127.0.0.1:3210 (user shop: shop chain key, settles on Arc)
-                                   └──> approver 127.0.0.1:3230 (user tryit, operator key only)
+                                   └──> approver 127.0.0.1:3230 (user approver, operator key only)
 ```
 
 ## Deploy
@@ -24,7 +24,8 @@ Everything below runs from the repository root. Nothing prints a key.
    fly volumes create fuel_data --region sin --size 1 --app fuel-arc-demo
    # Fuel's own keys and the token key, read from the demo's env file without echoing them:
    grep -E '^(FUEL_API_KEY|FUEL_AGENT_KEY|FUEL_TOKEN_ENCRYPTION_KEY)=' ~/.fuel-arc/fuel-arc.env | fly secrets import --app fuel-arc-demo
-   fly deploy --config deploy/fly/fly.toml --dockerfile deploy/fly/Dockerfile --build-arg FUEL_COMMIT=$(git rev-parse --short HEAD)
+   fly deploy --config deploy/fly/fly.toml --dockerfile deploy/fly/Dockerfile --ha=false --build-arg FUEL_COMMIT=$(git rev-parse --short HEAD)
+   fly status --app fuel-arc-demo   # exactly ONE machine, or stop and ask why
    ```
 
    Then check: `curl -s https://fuel-arc-demo.fly.dev/try/status` answers, and
@@ -73,7 +74,7 @@ Run on the machine with `fly ssh console --app fuel-arc-demo`, then `cd /app`:
 | `... control.ts status` | the door's view: open or why, today's total, recent attempts |
 | `... control.ts agent` | the agent as Fuel sees it: cap, spent, frozen |
 | `fly secrets unset ARC_AGENT_KEY ARC_SHOP_KEY` | disarm: back to safe mode on the next boot |
-| `fly scale count 0` | stop everything |
+| `fly machine stop <id>` | the hard stop: nothing runs until `fly machine start` |
 
 The door closes itself when today's forwarded total would pass $0.20, when
 the shop wallet is under $0.50 or the agent wallet under $0.05, or when it
@@ -82,8 +83,8 @@ has not been able to read the balances for ten minutes.
 ## Logs and the proof page
 
 `fly logs --app fuel-arc-demo`. The door's own log of every attempt is
-`/home/tryit/.fuel-arc/tryit-log.jsonl` on the machine (ephemeral; copy it
-down with `fly ssh sftp get` before a redeploy if it matters). The ledger is
+`/data/tryit/tryit-log.jsonl` on the volume, next to the pause file; it
+survives restarts and redeploys. Copy it down with `fly ssh sftp get`. The ledger is
 `/data/fuel-arc.db`; copy it down the same way to regenerate the proof page
 with `scripts/arc-demo/publish-proof.ts` (which reads `~/.fuel-arc/fuel-arc.db`).
 

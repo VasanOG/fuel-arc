@@ -38,10 +38,17 @@ async function operator(path: string, method = "POST", body: Record<string, unkn
 }
 
 switch (process.argv[2]) {
-  case "pause":
+  case "pause": {
     closeSync(openSync(pauseFile, "a", 0o600));
-    console.log(`paused: ${pauseFile} exists; the door is closed`);
+    // Say so only once the door itself reports it: a pause file the door is not watching pauses nothing.
+    const s = (await fetch(`${door}/try/status`).then((r) => r.json()).catch(() => null)) as { closedReason?: string } | null;
+    if (s?.closedReason === "paused") console.log(`paused: ${pauseFile} exists and the door reports it closed`);
+    else {
+      console.error(`${pauseFile} was created but the door does not report "paused" (it says ${JSON.stringify(s?.closedReason ?? null)}); is TRYIT_PAUSE_FILE the same for both? Use "fly machine stop" to be sure.`);
+      process.exit(1);
+    }
     break;
+  }
   case "resume":
     rmSync(pauseFile, { force: true });
     console.log("resumed: the door is open (if its other stops allow)");

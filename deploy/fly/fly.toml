@@ -3,8 +3,10 @@
 #   fly deploy --config deploy/fly/fly.toml --dockerfile deploy/fly/Dockerfile \
 #     --build-arg FUEL_COMMIT=$(git rev-parse --short HEAD)
 #
-# ONE machine, always on. The ledger in /data is the only thing that enforces
-# the agent's $5 lifetime limit, and two machines would mean two ledgers.
+# ONE machine, always on: deploy with `--ha=false` and check `fly status`
+# shows one. The ledger in /data is the only thing that enforces the agent's
+# $5 lifetime limit, and two machines would mean two ledgers. Never
+# `fly scale count 2` or `fly machine clone` this app.
 app = "fuel-arc-demo"
 primary_region = "sin"
 
@@ -14,6 +16,12 @@ primary_region = "sin"
 
 [env]
   TRYIT_ALLOWED_ORIGIN = "https://vasanog.github.io"
+  # On the volume, so a restart keeps today's cap and a pause stays paused.
+  # Set here (not only in the entrypoint) so an `fly ssh console` session
+  # running demo/try-it/control.ts sees the same paths the door does.
+  TRYIT_PAUSE_FILE = "/data/tryit/tryit.paused"
+  TRYIT_LOG_FILE = "/data/tryit/tryit-log.jsonl"
+  TRYIT_DOOR_URL = "http://127.0.0.1:3220"
 
 [[mounts]]
   source = "fuel_data"
@@ -26,7 +34,6 @@ primary_region = "sin"
   auto_stop_machines = "off"
   auto_start_machines = true
   min_machines_running = 1
-  max_machines_running = 1
 
   [http_service.concurrency]
     type = "requests"

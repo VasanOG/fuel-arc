@@ -6,13 +6,17 @@
 # Secrets arrive as environment variables (fly secrets):
 #   ARC_AGENT_KEY   the demo agent's private key     -> /home/api/.fuel-arc/agent.key  (api only)
 #   ARC_SHOP_KEY    the shop wallet's private key    -> /home/shop/.fuel-arc/shop.key  (shop only)
-#   FUEL_API_KEY    Fuel's operator key              -> approver only
+#   FUEL_API_KEY    Fuel's operator key              -> api (to check callers) and approver
 #   FUEL_AGENT_KEY  Fuel's agent key                 -> api (to check callers) and door
 #   FUEL_TOKEN_ENCRYPTION_KEY                        -> api
 #
 # The two chain keys are written to 0600 files on the machine's root
 # filesystem (ephemeral, recreated at every boot), never on the /data volume,
 # which Fly snapshots. They are unset from this shell as soon as written.
+#
+# What lives on the volume: the ledger (/data/fuel-arc.db, user api) and the
+# door's state (/data/tryit: its attempt log and the pause file, user tryit),
+# so a restart neither resets the daily cap nor reopens a paused door.
 #
 # SAFE MODE: with ARC_AGENT_KEY and ARC_SHOP_KEY absent, the API starts
 # unarmed (every demo payment is refused as "not armed" before any request)
@@ -25,15 +29,19 @@ cd /app
 COMMIT="${FUEL_COMMIT:-unknown}"
 echo "[entrypoint] commit $COMMIT"
 
-for v in FUEL_API_KEY FUEL_AGENT_KEY FUEL_TOKEN_ENCRYPTION_KEY; do
+for v in FUEL_API_KEY FUEL_AGENT_KEY FUEL_TOKEN_ENCRYPTION_KEY TRYIT_PAUSE_FILE TRYIT_LOG_FILE; do
   if [ -z "${!v:-}" ]; then echo "[entrypoint] $v is not set; not starting"; exit 1; fi
 done
 if [ "$FUEL_API_KEY" = "$FUEL_AGENT_KEY" ]; then echo "[entrypoint] the two Fuel keys are equal; not starting"; exit 1; fi
 
+# The volume is mounted root-owned; fix that here, every boot, before anything opens it.
+chown api:fuel /data && chmod 700 /data
+install -d -m 700 -o tryit -g fuel /data/tryit
 # Key folders: 0700, owned by the one user that may read them (src/payments/arc-demo.ts, demo/arc-shop/server.ts check both).
 install -d -m 700 -o api -g fuel /home/api/.fuel-arc
 install -d -m 700 -o shop -g fuel /home/shop/.fuel-arc
-install -d -m 700 -o tryit -g fuel /home/tryit/.fuel-arc
+for u in api shop tryit approver; do install -d -m 700 -o "$u" -g fuel "/tmp/$u"; done
+rm -f /home/api/.fuel-arc/agent.key /home/shop/.fuel-arc/shop.key
 ARMED=0
 if [ -n "${ARC_AGENT_KEY:-}" ] && [ -n "${ARC_SHOP_KEY:-}" ]; then
   (umask 077; printf '%s\n' "$ARC_AGENT_KEY" > /home/api/.fuel-arc/agent.key; printf '%s\n' "$ARC_SHOP_KEY" > /home/shop/.fuel-arc/shop.key)
@@ -55,33 +63,33 @@ if [ -f "$DB.incoming" ]; then
   rm -f "$DB-wal" "$DB-shm" "$DB-journal"
 fi
 touch "$DB" && chown api:fuel "$DB" && chmod 600 "$DB"
-LOGDIR=/home/tryit/.fuel-arc
 
-BASE=(PATH="$PATH" TMPDIR=/tmp DOTENV_CONFIG_PATH=/dev/null NODE_ENV=production FUEL_COMMIT="$COMMIT")
+BASE=(PATH="$PATH" DOTENV_CONFIG_PATH=/dev/null NODE_ENV=production FUEL_COMMIT="$COMMIT")
 pids=()
 
 # Fuel's API: the demo database, Fuel's own keys, and (armed) the agent's chain key file.
-env -i "${BASE[@]}" HOME=/home/api FUEL_DB_PATH="$DB" PORT=3200 X402_PAY_TO=0x0000000000000000000000000000000000000402 \
-  FUEL_API_KEY="$FUEL_API_KEY" FUEL_AGENT_KEY="$FUEL_AGENT_KEY" FUEL_TOKEN_ENCRYPTION_KEY="$FUEL_TOKEN_ENCRYPTION_KEY" \
-  $([ "$ARMED" = 1 ] && echo FUEL_ARC_DEMO_KEY_FILE=/home/api/.fuel-arc/agent.key) \
+ARM=()
+[ "$ARMED" = 1 ] && ARM=(FUEL_ARC_DEMO_KEY_FILE=/home/api/.fuel-arc/agent.key)
+env -i "${BASE[@]}" HOME=/home/api TMPDIR=/tmp/api FUEL_DB_PATH="$DB" PORT=3200 X402_PAY_TO=0x0000000000000000000000000000000000000402 \
+  FUEL_API_KEY="$FUEL_API_KEY" FUEL_AGENT_KEY="$FUEL_AGENT_KEY" FUEL_TOKEN_ENCRYPTION_KEY="$FUEL_TOKEN_ENCRYPTION_KEY" "${ARM[@]}" \
   runuser -u api -- node --import tsx src/server.ts &
 pids+=($!)
 
 if [ "$ARMED" = 1 ]; then
-  env -i "${BASE[@]}" HOME=/home/shop ARC_SHOP_KEY_FILE=/home/shop/.fuel-arc/shop.key PORT=3210 \
+  env -i "${BASE[@]}" HOME=/home/shop TMPDIR=/tmp/shop ARC_SHOP_KEY_FILE=/home/shop/.fuel-arc/shop.key PORT=3210 \
     runuser -u shop -- node --import tsx demo/arc-shop/server.ts &
   pids+=($!)
 fi
 
-# The approver: the operator key, loopback only.
-env -i "${BASE[@]}" HOME=/home/tryit FUEL_API_KEY="$FUEL_API_KEY" PORT=3230 \
-  runuser -u tryit -- node --import tsx demo/try-it/approver-server.ts &
+# The approver: the operator key, loopback only, its own user so the door cannot read its environment.
+env -i "${BASE[@]}" HOME=/home/approver TMPDIR=/tmp/approver FUEL_API_KEY="$FUEL_API_KEY" PORT=3230 \
+  runuser -u approver -- node --import tsx demo/try-it/approver-server.ts &
 pids+=($!)
 
 # The door: the agent key only, on all interfaces (the Fly proxy is the only way in).
-env -i "${BASE[@]}" HOME=/home/tryit FUEL_AGENT_KEY="$FUEL_AGENT_KEY" PORT=3220 HOST=0.0.0.0 \
+env -i "${BASE[@]}" HOME=/home/tryit TMPDIR=/tmp/tryit FUEL_AGENT_KEY="$FUEL_AGENT_KEY" PORT=3220 HOST=0.0.0.0 \
   TRYIT_TRUST_FLY_CLIENT_IP=1 TRYIT_ALLOWED_ORIGIN="${TRYIT_ALLOWED_ORIGIN:-https://vasanog.github.io}" \
-  TRYIT_PAUSE_FILE="$LOGDIR/tryit.paused" TRYIT_LOG_FILE="$LOGDIR/tryit-log.jsonl" \
+  TRYIT_PAUSE_FILE="$TRYIT_PAUSE_FILE" TRYIT_LOG_FILE="$TRYIT_LOG_FILE" \
   runuser -u tryit -- node --import tsx demo/try-it/door-server.ts &
 pids+=($!)
 

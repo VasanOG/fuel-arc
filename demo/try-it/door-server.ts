@@ -65,7 +65,10 @@ const app = createDoorApp({
   balances: () => balances,
   clientAddress: (req) => {
     const fly = req.headers["fly-client-ip"];
-    return trustFly && typeof fly === "string" && fly ? fly : (req.socket.remoteAddress ?? "unknown");
+    const address = trustFly && typeof fly === "string" && fly ? fly : (req.socket.remoteAddress ?? "unknown");
+    // One IPv6 subscriber holds a whole /64, so the limit keys on that prefix,
+    // or a visitor could take a fresh address for every attempt.
+    return address.includes(":") ? address.split(":").slice(0, 4).join(":") + "::/64" : address;
   },
 });
 
