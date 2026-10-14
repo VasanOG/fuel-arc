@@ -1,7 +1,7 @@
 # Arc Microgrants: submission text (draft)
 
 **Project:** Fuel, spend controls for AI agents, live on Arc
-**Link:** the proof page (`docs/arc/index.html`) via GitHub Pages — URL set once the repo is public
+**Link:** https://vasanog.github.io/fuel-arc/arc/ (the proof page, `docs/arc/index.html`, served by GitHub Pages)
 **Repository:** https://github.com/VasanOG/fuel-arc
 
 ## Short description
