@@ -61,13 +61,41 @@ export { SIGNUP_CODES, type SignupCode } from "./codes.js";
  * signing in legitimately does it once or twice.
  */
 const ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
+
+/**
+ * Sign-in attempts allowed per account, and per client, in one window.
+ *
+ * DEFAULTS ARE THE LIMITS ABOVE (5 and 20) and almost every deployment should
+ * keep them. They exist as settings for one case: a public demo where many
+ * people share ONE published account and arrive through one proxy, so every
+ * sign-in -- successful ones count too -- lands in the same two buckets and
+ * the sixth judge in fifteen minutes would be refused. A published password
+ * gains nothing from a low guess limit; it is the lockout that costs.
+ *
+ * Read once at load, like the relay config, and refused outright when not a
+ * whole number from 1 to 1000, so a typo stops the server instead of
+ * silently meaning "no limit".
+ */
+export function loginLimitsFrom(env: Record<string, string | undefined>): { perAccount: number; perClient: number } {
+  const read = (name: string, fallback: number): number => {
+    const raw = env[name];
+    if (raw === undefined || raw === "") return fallback;
+    const n = Number(raw);
+    if (!/^\d+$/.test(raw) || !Number.isInteger(n) || n < 1 || n > 1000) {
+      throw new Error(`${name} must be a whole number from 1 to 1000, not ${JSON.stringify(raw)}`);
+    }
+    return n;
+  };
+  return { perAccount: read("FUEL_LOGIN_PER_ACCOUNT", 5), perClient: read("FUEL_LOGIN_PER_CLIENT", 20) };
+}
+export const LOGIN_LIMITS = loginLimitsFrom(process.env);
 /**
  * Keyed on the ACCOUNT, which since ADR 0018 is a company handle plus an
  * address. Keyed on the address alone, failures at one company would throttle
  * the same address at another: a person at company B could lock out, and
  * watch the 429s of, someone at company A.
  */
-const byEmail = new Buckets(5, ATTEMPT_WINDOW_MS);
+const byEmail = new Buckets(LOGIN_LIMITS.perAccount, ATTEMPT_WINDOW_MS);
 const accountKey = (companyHandle: string, email: string) => `${companyHandle}\u0000${email}`;
 
 /**
@@ -88,7 +116,7 @@ const accountKey = (companyHandle: string, email: string) => `${companyHandle}\u
  * The two routes still keep separate buckets, for the reason 7A-2c recorded: a
  * page anybody can post to should not share a counter with the product's door.
  */
-const byLoginAddress = new Buckets(20, ATTEMPT_WINDOW_MS);
+const byLoginAddress = new Buckets(LOGIN_LIMITS.perClient, ATTEMPT_WINDOW_MS);
 const bySignupAddress = new Buckets(20, ATTEMPT_WINDOW_MS);
 
 /**

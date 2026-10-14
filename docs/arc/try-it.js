@@ -23,7 +23,7 @@
     const when = new Date(a.at).toISOString().replace("T", " ").slice(0, 19) + " UTC";
     let extra = "";
     if (a.explorerUrl) extra = ' <a href="' + esc(a.explorerUrl) + '">view on the Arc explorer</a>';
-    if (a.outcome === "held" && a.approvalRequestId) extra = ' <button class="try-complete" data-id="' + esc(a.approvalRequestId) + '">Approve and complete</button> <span class="try-note">(in Fuel a person approves this in the dashboard; here the demo\'s approver stands in)</span>';
+    if (a.outcome === "held" && a.approvalRequestId) extra = ' <button class="try-complete" data-id="' + esc(a.approvalRequestId) + '">Complete payment</button> <span class="try-note">Approve it first in <a href="' + DOOR + '/approvals">Fuel\'s dashboard</a> (judge login below), then press Complete payment.</span>';
     return '<li class="' + tone(a.outcome) + '"><span class="try-when">' + esc(when) + "</span> " + esc(a.item) + " " + esc(a.amountUsd) + ": <b>" + esc(words[a.outcome] || a.outcome) + "</b> <span class='try-msg'>" + esc(a.message) + "</span>" + extra + "</li>";
   }
 
@@ -61,7 +61,7 @@
     const buy = e.target.closest("button.try-buy");
     if (buy) return act("/try/buy", { item: buy.dataset.item }, "Asking Fuel to pay for " + buy.dataset.item + ".");
     const done = e.target.closest("button.try-complete");
-    if (done) return act("/try/complete", { approvalRequestId: done.dataset.id }, "Approving, then asking Fuel to pay.");
+    if (done) return act("/try/complete", { approvalRequestId: done.dataset.id }, "Checking the approval, then asking Fuel to pay.");
   });
 
   refresh();

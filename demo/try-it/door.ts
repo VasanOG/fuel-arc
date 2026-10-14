@@ -233,8 +233,14 @@ export function createDoorApp(options: DoorOptions): express.Express {
       return res.status(503).json({ error: "The demo's approver could not be reached." });
     }
     if (!approved.ok) {
+      // 503 from the approver: Fuel would not let the shared key decide, because
+      // the demo company now has people who can decide as themselves. That is
+      // the point of the dashboard: a person approves it there, by name.
+      if (approved.status === 503) {
+        return res.status(409).json({ error: "Not approved yet. A person approves this in Fuel's dashboard (sign in with the judge login), then press Complete payment again.", needsApproval: true });
+      }
       const why = ((await approved.json().catch(() => ({}))) as { error?: string }).error ?? "not approved";
-      return res.status(approved.status === 409 ? 409 : 503).json({ error: `The demo's approver refused: ${why}.` });
+      return res.status(409).json({ error: `The demo's approver refused: ${why}.` });
     }
 
     let attempt: Attempt;

@@ -9,6 +9,11 @@
 #   FUEL_API_KEY    Fuel's operator key              -> api (to check callers) and approver
 #   FUEL_AGENT_KEY  Fuel's agent key                 -> api (to check callers) and door
 #   FUEL_TOKEN_ENCRYPTION_KEY                        -> api
+#   FUEL_RELAY_KEY  the dashboard's sign-in relay key -> api and dashboard (ADR 0020)
+#
+# Public listener: deploy/fly/front.mjs on 0.0.0.0:3220 (user web), routing
+# /try and /health to the door (127.0.0.1:3221) and everything else to the
+# dashboard (127.0.0.1:3100). The API, shop and approver are never routed to.
 #
 # The two chain keys are written to 0600 files on the machine's root
 # filesystem (ephemeral, recreated at every boot), never on the /data volume,
@@ -29,7 +34,7 @@ cd /app
 COMMIT="${FUEL_COMMIT:-unknown}"
 echo "[entrypoint] commit $COMMIT"
 
-for v in FUEL_API_KEY FUEL_AGENT_KEY FUEL_TOKEN_ENCRYPTION_KEY TRYIT_PAUSE_FILE TRYIT_LOG_FILE; do
+for v in FUEL_API_KEY FUEL_AGENT_KEY FUEL_TOKEN_ENCRYPTION_KEY FUEL_RELAY_KEY TRYIT_PAUSE_FILE TRYIT_LOG_FILE PUBLIC_ORIGIN; do
   if [ -z "${!v:-}" ]; then echo "[entrypoint] $v is not set; not starting"; exit 1; fi
 done
 if [ "$FUEL_API_KEY" = "$FUEL_AGENT_KEY" ]; then echo "[entrypoint] the two Fuel keys are equal; not starting"; exit 1; fi
@@ -44,7 +49,7 @@ install -d -m 700 -o tryit -g fuel /data/tryit
 # Key folders: 0700, owned by the one user that may read them (src/payments/arc-demo.ts, demo/arc-shop/server.ts check both).
 install -d -m 700 -o api -g fuel /home/api/.fuel-arc
 install -d -m 700 -o shop -g fuel /home/shop/.fuel-arc
-for u in api shop tryit approver; do install -d -m 700 -o "$u" -g fuel "/tmp/$u"; done
+for u in api shop tryit approver web; do install -d -m 700 -o "$u" -g fuel "/tmp/$u"; done
 rm -f /home/api/.fuel-arc/agent.key /home/shop/.fuel-arc/shop.key
 ARMED=0
 if [ -n "${ARC_AGENT_KEY:-}" ] && [ -n "${ARC_SHOP_KEY:-}" ]; then
@@ -76,6 +81,8 @@ ARM=()
 [ "$ARMED" = 1 ] && ARM=(FUEL_ARC_DEMO_KEY_FILE=/home/api/.fuel-arc/agent.key)
 env -i "${BASE[@]}" HOME=/home/api TMPDIR=/tmp/api FUEL_DB_PATH="$DB" PORT=3200 X402_PAY_TO=0x0000000000000000000000000000000000000402 \
   FUEL_API_KEY="$FUEL_API_KEY" FUEL_AGENT_KEY="$FUEL_AGENT_KEY" FUEL_TOKEN_ENCRYPTION_KEY="$FUEL_TOKEN_ENCRYPTION_KEY" "${ARM[@]}" \
+  FUEL_RELAY_KEY="$FUEL_RELAY_KEY" FUEL_DASHBOARD_URL="$PUBLIC_ORIGIN" \
+  FUEL_LOGIN_PER_ACCOUNT="${FUEL_LOGIN_PER_ACCOUNT:-}" FUEL_LOGIN_PER_CLIENT="${FUEL_LOGIN_PER_CLIENT:-}" \
   runuser -u api -- node --import tsx src/server.ts &
 pids+=($!)
 
@@ -90,14 +97,25 @@ env -i "${BASE[@]}" HOME=/home/approver TMPDIR=/tmp/approver FUEL_API_KEY="$FUEL
   runuser -u approver -- node --import tsx demo/try-it/approver-server.ts &
 pids+=($!)
 
-# The door: the agent key only, on all interfaces (the Fly proxy is the only way in).
-env -i "${BASE[@]}" HOME=/home/tryit TMPDIR=/tmp/tryit FUEL_AGENT_KEY="$FUEL_AGENT_KEY" PORT=3220 HOST=0.0.0.0 \
+# The door: the agent key only, on loopback; the front is the only way in.
+env -i "${BASE[@]}" HOME=/home/tryit TMPDIR=/tmp/tryit FUEL_AGENT_KEY="$FUEL_AGENT_KEY" PORT=3221 \
   TRYIT_TRUST_FLY_CLIENT_IP=1 TRYIT_ALLOWED_ORIGIN="${TRYIT_ALLOWED_ORIGIN:-https://vasanog.github.io}" \
   TRYIT_PAUSE_FILE="$TRYIT_PAUSE_FILE" TRYIT_LOG_FILE="$TRYIT_LOG_FILE" \
   runuser -u tryit -- node --import tsx demo/try-it/door-server.ts &
 pids+=($!)
 
-unset FUEL_API_KEY FUEL_AGENT_KEY FUEL_TOKEN_ENCRYPTION_KEY
+# The dashboard: the relay key only (it holds no API credential; ADR 0020).
+# `server.mjs start` stamps each request's client address before Next runs.
+env -i "${BASE[@]}" HOME=/home/web TMPDIR=/tmp/web FUEL_API_URL=http://127.0.0.1:3200 FUEL_RELAY_KEY="$FUEL_RELAY_KEY" \
+  bash -c 'cd /app/dashboard && exec runuser -u web -- node server.mjs start' &
+pids+=($!)
+
+# The front: no secrets at all; the one public listener.
+env -i PATH="$PATH" HOME=/home/web PORT=3220 DOOR_PORT=3221 PUBLIC_ORIGIN="$PUBLIC_ORIGIN" \
+  runuser -u web -- node /app/deploy/fly/front.mjs &
+pids+=($!)
+
+unset FUEL_API_KEY FUEL_AGENT_KEY FUEL_TOKEN_ENCRYPTION_KEY FUEL_RELAY_KEY
 trap 'kill "${pids[@]}" 2>/dev/null' EXIT
 wait -n
 echo "[entrypoint] a process exited; stopping so Fly restarts the machine"

@@ -22,7 +22,12 @@ primary_region = "sin"
   # running demo/try-it/control.ts sees the same paths the door does.
   TRYIT_PAUSE_FILE = "/data/tryit/tryit.paused"
   TRYIT_LOG_FILE = "/data/tryit/tryit-log.jsonl"
-  TRYIT_DOOR_URL = "http://127.0.0.1:3220"
+  TRYIT_DOOR_URL = "http://127.0.0.1:3221"
+  PUBLIC_ORIGIN = "https://fuel-arc-demo.fly.dev"
+  # One published judge account behind one proxy: raise the sign-in limits
+  # (src/auth/routes.ts, loginLimitsFrom) so judges do not lock each other out.
+  FUEL_LOGIN_PER_ACCOUNT = "100"
+  FUEL_LOGIN_PER_CLIENT = "300"
 
 [[mounts]]
   source = "fuel_data"
@@ -50,4 +55,4 @@ primary_region = "sin"
 
 [[vm]]
   size = "shared-cpu-1x"
-  memory = "512mb"
+  memory = "1gb"

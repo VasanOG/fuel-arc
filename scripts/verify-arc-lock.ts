@@ -628,9 +628,10 @@ async function main(): Promise<void> {
         asked.push({ path: req.path, auth: req.headers.authorization, body: {} });
         res.status(approvalReply.status).json(approvalReply.json);
       });
+      let approveStatus = 200;
       fakeFuel.post("/api/approvals/:id/approve", (req, res) => {
         asked.push({ path: req.path, auth: req.headers.authorization, body: {} });
-        res.json({ status: "approved" });
+        res.status(approveStatus).json(approveStatus === 200 ? { status: "approved" } : { error: "a person must decide" });
       });
       const fuelServer = fakeFuel.listen(0, "127.0.0.1");
       await new Promise((r) => fuelServer.once("listening", r));
@@ -725,10 +726,10 @@ async function main(): Promise<void> {
 
         // The approver's own refusals, each before Fuel is asked to approve.
         for (const [what, reply, status] of [
-          ["another agent's request", { status: 200, json: { agentId: "not-the-demo-agent", amountBaseUnits: "5000", status: "pending" } }, 503],
-          ["a request for an amount no item costs", { status: 200, json: { agentId: chainMod.MAINNET_DEMO.agentId, amountBaseUnits: "999", status: "pending" } }, 503],
+          ["another agent's request", { status: 200, json: { agentId: "not-the-demo-agent", amountBaseUnits: "5000", status: "pending" } }, 409],
+          ["a request for an amount no item costs", { status: 200, json: { agentId: chainMod.MAINNET_DEMO.agentId, amountBaseUnits: "999", status: "pending" } }, 409],
           ["a request that is no longer pending", { status: 200, json: { agentId: chainMod.MAINNET_DEMO.agentId, amountBaseUnits: "5000", status: "consumed" } }, 409],
-          ["a request Fuel does not know", { status: 404, json: {} }, 503],
+          ["a request Fuel does not know", { status: 404, json: {} }, 409],
         ] as const) {
           payReply = { status: 202, json: { approvalRequestId: "33333333-3333-4333-8333-333333333333", message: "held" } };
           await call("POST", "/try/buy", { item: "unusual" }, { "x-test-client": `judge-${status}-${what.length}` });
@@ -747,6 +748,16 @@ async function main(): Promise<void> {
         const retried = await call("POST", "/try/complete", { approvalRequestId: "55555555-5555-4555-8555-555555555555" }, { "x-test-client": "judge-again" });
         assertEqual(retried.json.outcome, "paid", "AL-8: an approval already granted is not decided again; the door goes on to pay with it");
         assert(!asked.some((a) => a.path.endsWith("/approve")), "AL-8: and nothing was approved twice");
+        // Once the demo company has people, Fuel refuses the shared key's decision (403): the door sends the visitor to the dashboard.
+        payReply = { status: 202, json: { approvalRequestId: "77777777-7777-4777-8777-777777777777", message: "held" } };
+        await call("POST", "/try/buy", { item: "unusual" }, { "x-test-client": "judge-people" });
+        approvalReply = { status: 200, json: { agentId: chainMod.MAINNET_DEMO.agentId, amountBaseUnits: "5000", status: "pending" } };
+        approveStatus = 403;
+        asked.length = 0;
+        const needsPerson = await call("POST", "/try/complete", { approvalRequestId: "77777777-7777-4777-8777-777777777777" }, { "x-test-client": "judge-people" });
+        assert(needsPerson.status === 409 && needsPerson.json.needsApproval === true, "AL-8: when Fuel refuses the shared key (the company has people), the door says a person approves it in the dashboard");
+        assert(!asked.some((a) => a.path.endsWith("/pay")), "AL-8: and nothing was paid");
+        approveStatus = 200;
         const direct = await fetch(`${approverUrl}/approve`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ approvalRequestId: "not-an-id" }) });
         assertEqual(direct.status, 400, "AL-8: the approver takes an id and nothing else");
         assertEqual((await fetch(`${approverUrl}/agents`, { method: "POST" })).status, 404, "AL-8: the approver has no other route");
@@ -847,6 +858,17 @@ async function main(): Promise<void> {
       assertEqual(policy.TRY_DAILY_CAP_BASE_UNITS, 200_000n, "AL-8: the daily cap is $0.20");
       assert(policy.TRY_DAILY_CAP_BASE_UNITS * 25n <= chainMod.ARC_LIFETIME_LIMIT_BASE_UNITS, "AL-8: at the daily cap, the lifetime budget lasts at least 25 days");
       assertEqual(Object.keys(policy.TRY_ITEMS).join(","), "basic,unusual,ceiling", "AL-8: the three items are the shop's three");
+
+      console.log("\n== AL-9: the dashboard tells the truth about the demo company");
+      const env = demo.arcDemoEnvironmentFor(chainMod.MAINNET_DEMO.companyId);
+      assert(env !== null && env.label.length > 0, "AL-9: the demo company gets its own environment verdict");
+      assertEqual(demo.arcDemoEnvironmentFor(crypto.randomUUID()), null, "AL-9: any other company gets none, so its badge is unchanged");
+      assertEqual(demo.arcDemoEnvironmentFor(""), null, "AL-9: an empty company id gets none");
+      const funding = demo.arcDemoFundingNetwork(demoAgent);
+      assertEqual(funding, chainMod.MAINNET_DEMO.chain.label, "AL-9: the demo agent's funding panel names its own network");
+      assertEqual(demo.arcDemoFundingNetwork({ ...demoAgent, id: crypto.randomUUID() }), null, "AL-9: any other agent's funding panel is unchanged");
+      const apiSrc = code(join("src", "api.ts"));
+      assert(/const arc = arcDemoEnvironmentFor\(companyOf\(req\)\);\s*res\.json\(arc \? \{ \.\.\.verdict, \.\.\.arc \} : verdict\);/.test(apiSrc), "AL-9: /environment applies the demo verdict only for the caller's own company");
       for (const [name, item] of Object.entries(policy.TRY_ITEMS)) {
         const price = SHOP_PRICES.find((p) => p.path === item.path);
         assert(price !== undefined && BigInt(price.amount) === item.amountBaseUnits, `AL-8: the door's ${name} is the shop's ${item.path} at the shop's price`);

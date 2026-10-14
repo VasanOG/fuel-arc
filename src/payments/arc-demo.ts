@@ -30,6 +30,7 @@ import type { Agent } from "../db/agents.js";
 import { db } from "../db/index.js";
 import { spentBaseUnits } from "../db/payments.js";
 import {
+  ARC_MAINNET,
   ARC_LIFETIME_LIMIT_BASE_UNITS,
   ARC_MAX_PER_PAYMENT_BASE_UNITS,
   ARC_MAX_VALIDITY_SECONDS,
@@ -235,4 +236,27 @@ export function arcDemoSigner(options: { nowSeconds?: () => number } = {}): Paym
       return signature;
     },
   };
+}
+
+/**
+ * What the dashboard's environment badge says for the demo's own company.
+ *
+ * src/lib/environment.ts reduces Fuel's pinned constants, every one of which
+ * is a sandbox or testnet provider, so for every company it says "Sandbox".
+ * For the one company whose one agent pays real USDC on Arc mainnet that
+ * would be false, on exactly the screen whose job is to say whether money is
+ * real. So the API asks this first: for the demo company on mainnet the
+ * verdict is production, loud, and says why; for any other company, null,
+ * and the ordinary verdict stands unchanged.
+ */
+export function arcDemoEnvironmentFor(companyId: string): { environment: "production" | "sandbox"; label: string; isProduction: boolean } | null {
+  if (companyId !== MAINNET_DEMO.companyId) return null;
+  return MAINNET_DEMO.chain.chainId === ARC_MAINNET.chainId
+    ? { environment: "production", label: "Live: real money on Arc", isProduction: true }
+    : { environment: "sandbox", label: "Arc testnet (not real money)", isProduction: false };
+}
+
+/** The network to name on the demo agent's funding panel; null for every other agent. */
+export function arcDemoFundingNetwork(agent: Pick<Agent, "id" | "teamId" | "address">): string | null {
+  return isArcDemoAgent(agent) ? MAINNET_DEMO.chain.label : null;
 }

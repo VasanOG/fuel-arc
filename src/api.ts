@@ -147,7 +147,7 @@ import {
   createAgentWithCustody,
 } from "./agents/create.js";
 import { fireblocksSigner } from "./fireblocks/signer.js";
-import { arcDemoSigner, isArcDemoAgent } from "./payments/arc-demo.js";
+import { arcDemoEnvironmentFor, arcDemoFundingNetwork, arcDemoSigner, isArcDemoAgent } from "./payments/arc-demo.js";
 import { companyFor, companyOf, requireOwner, requireRole, sessionOf, userOf } from "./lib/auth.js";
 import { Buckets } from "./lib/buckets.js";
 import { attentionFor, collapse, type AttentionGroup } from "./alerts/attention.js";
@@ -430,7 +430,7 @@ async function presentWithBalance(agent: Agent) {
 function presentFunding(agent: Agent) {
   return {
     address: agent.address,
-    network: NETWORK_LABEL,
+    network: arcDemoFundingNetwork(agent) ?? NETWORK_LABEL,
     asset: ASSET_LABEL,
   };
 }
@@ -1123,8 +1123,12 @@ const EXPORT_HEADER = [
  * see src/lib/environment.ts for why the fail direction is "unknown" rather
  * than "sandbox".
  */
-api.get("/environment", OPERATOR, (_req, res) => {
-  res.json(describeEnvironment());
+api.get("/environment", OPERATOR, (req, res) => {
+  // The Arc demo's own company is the one place real money moves; its badge
+  // says so (src/payments/arc-demo.ts). Every other company: unchanged.
+  const verdict = describeEnvironment();
+  const arc = arcDemoEnvironmentFor(companyOf(req));
+  res.json(arc ? { ...verdict, ...arc } : verdict);
 });
 
 const ACTIVITY_QUERY_KEYS = [
@@ -2217,6 +2221,13 @@ api.post("/integrations/quickbooks/connect", OPERATOR, (req, res) => {
   if (userId === null) {
     return res.status(403).json({
       error: "connecting QuickBooks must be started by a signed-in person; a shared API key cannot start it",
+    });
+  }
+  // A deployment with no QuickBooks app configured (the public Arc demo) says
+  // so in words, instead of writing a state row and then failing as a 500.
+  if (!process.env.QBO_CLIENT_ID || !process.env.QBO_CLIENT_SECRET || !process.env.QBO_REDIRECT_URI) {
+    return res.status(503).json({
+      error: "QuickBooks is not set up on this deployment. Fuel's QuickBooks integration runs on its sandbox build.",
     });
   }
   const state = newState();

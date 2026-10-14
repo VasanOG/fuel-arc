@@ -13,6 +13,9 @@
 !scripts/arc-demo/
 !scripts/arc-demo/**
 !deploy/fly/entrypoint.sh
+!deploy/fly/front.mjs
+!dashboard/
+!dashboard/**
 **/node_modules
 **/.env*
 **/*.env
@@ -25,3 +28,8 @@
 **/*.p8
 **/*.p12
 **/secrets/
+**/.next
+**/.claude-flow
+**/tsconfig.tsbuildinfo
+**/*.log
+**/ruvector.db
