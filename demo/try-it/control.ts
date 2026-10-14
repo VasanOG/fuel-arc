@@ -26,7 +26,12 @@ const fuel = process.env.FUEL_API_URL ?? "http://127.0.0.1:3200";
 async function operator(path: string, method = "POST", body: Record<string, unknown> = { reason: "demo: operator stop" }): Promise<void> {
   const key = process.env.FUEL_API_KEY;
   if (!key) throw new Error("FUEL_API_KEY is not set");
-  const res = await fetch(`${fuel}/api/agents/${MAINNET_DEMO.agentId}${path}`, { method, headers: { authorization: `Bearer ${key}`, "content-type": "application/json" }, body: JSON.stringify(body) });
+  // A GET may carry no body: fetch throws on one (found on the first live use of `agent`).
+  const res = await fetch(`${fuel}/api/agents/${MAINNET_DEMO.agentId}${path}`, {
+    method,
+    headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+    ...(method === "GET" ? {} : { body: JSON.stringify(body) }),
+  });
   const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   console.log(`${method} ${path || "/"}: HTTP ${res.status}`);
   if (!res.ok) {
@@ -61,12 +66,12 @@ switch (process.argv[2]) {
     break;
   case "cap": {
     const usd = process.argv[3];
-    if (!usd || !/^\d+(\.\d{1,2})?$/.test(usd)) throw new Error("cap takes a dollar amount like 1.50");
+    if (!usd || !/^\d+(\.\d{1,6})?$/.test(usd)) throw new Error("cap takes a dollar amount like 1.50 or 1.022");
     await operator("", "PATCH", { spendCapUsd: usd });
     break;
   }
   case "agent":
-    await operator("", "GET", undefined as never);
+    await operator("", "GET");
     break;
   case "status": {
     const res = await fetch(`${door}/try/status`);
