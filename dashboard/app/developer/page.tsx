@@ -210,16 +210,17 @@ Authorization: Bearer <your FUEL_AGENT_KEY>
         <p className="eyebrow">Credentials, honestly</p>
         <div className={styles.notice}>
           <p className={styles.noticeLead}>
-            Fuel currently uses environment-managed integration credentials in this internal
-            sandbox. Per-agent credentials, rotation, revocation, user login, and tenant isolation
-            are not built yet.
+            People sign in with their own accounts. Each account belongs to one company, Fuel
+            resolves the company from the signed-in person rather than from anything a request
+            says, and every approval records who made it.
           </p>
           <p className={styles.noticeBody}>
-            Concretely: there is one shared credential every agent&apos;s calls use, and one
-            separate shared credential every operator action uses. Fuel tells the two apart by
-            which secret was presented, not by anything the caller claims about itself. Neither
-            can be issued, copied, or revoked from this dashboard — both are set once, as
-            environment variables, when Fuel is deployed.
+            Agents and Fuel&apos;s own scripts use two role credentials instead: one shared by
+            every agent, which can pay but never approve or change a cap, and one for operator
+            scripts, which can approve but never pay. Fuel tells them apart by which secret was
+            presented, not by anything the caller claims. Both are set as deployment secrets.
+            Issuing a credential per agent, and rotating or revoking credentials from this page,
+            are not built yet.
           </p>
         </div>
       </section>

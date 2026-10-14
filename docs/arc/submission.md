@@ -14,7 +14,11 @@
 
 The dashboard's environment badge says "Live: real money on Arc" because it is: every paid row is a real USDC transfer on Arc mainnet.
 
-## Short description
+## Short description (for the submission form)
+
+Fuel is a wallet and spend-control layer for AI agents. Before an agent's payment is signed, Fuel checks its caps, holds unusual amounts for a person to approve, rate-limits it, and records every decision in a ledger that exports to accounting. Here it runs live on Arc mainnet: press Buy on the proof page and a real agent pays a real shop in USDC on Arc, with Arc's USDC as both the money and the gas, settled within one x402 request. Then sign in to Fuel's dashboard to approve what it held.
+
+## Short description, in full
 
 Fuel is a wallet and spend-control layer for AI agents. An agent asks Fuel to pay for something. Before anything is signed, Fuel checks:
 - the agent's own spend cap, then its team's and its company's;
@@ -48,3 +52,9 @@ On Arc, one agent pays real USDC on Arc mainnet through all of those controls. A
 3. Sign in to the dashboard and compare its Activity Ledger with the explorer.
 4. Download `proof.csv` (attempts with transaction hashes and explorer links) or `ledger-export.csv` (Fuel's own accounting export for the same agent, with no crypto identifiers, by design).
 5. The code: `src/payments/arc-chain.ts` (the one Arc agent and its limits), `src/payments/arc-demo.ts` (the lock and the signer), `demo/arc-shop/` (the shop and its settler), `demo/try-it/` (the public button and its limits), `deploy/fly/` (how the live demo runs), and `scripts/verify-arc-lock.ts` (the checks; `npm run verify-arc-lock`).
+
+## Where Fuel goes next
+
+An agent that can pay is half of an economic actor. Fuel's earning side is already built and tested on testnet: an agent can own a paid endpoint that Fuel fronts with x402, and the dashboard shows each agent's earned, spent and net. The next step is **agent behaviour**: using that two-sided ledger to show whether each agent is profitable, what each outcome costs it, which counterparties give it value, and where its spending pattern changed, so the person running it knows what to change. On Arc that is the natural home for it: USDC in, USDC out, gas in the same unit, and fast enough settlement that every call can be its own ledger line.
+
+Also next: a credential per agent (today agents share one role credential), rotation and revocation from the dashboard, and moving customer agents from testnet to Arc mainnet once those land.
