@@ -1,8 +1,7 @@
 # An ALLOWLIST: everything is excluded, then only the code the demo runs is
 # let in. So no database, no .env, no key, no tool cache and no dashboard can
 # reach the image by accident, whatever is lying around the working folder.
-# The same file sits at the repository root, which is what Docker reads by
-# default; this copy is what fly.toml names. Keep them identical.
+# Read from the repository root, the build context (fly.toml names it).
 *
 !package.json
 !package-lock.json

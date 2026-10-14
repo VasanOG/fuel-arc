@@ -1,8 +1,8 @@
 # The Arc founder demo on one Fly.io machine: Fuel's API, the shop, the Try-it
 # door and its approver. See deploy/fly/README.md for what runs as whom.
 #
-# Built from the repository root:  fly deploy --config deploy/fly/fly.toml
-# The build context is filtered by deploy/fly/.dockerignore (an allowlist).
+# Built from the repository root:  fly deploy --ha=false (fly.toml is at the root)
+# The build context is filtered by the root .dockerignore (an allowlist).
 FROM node:24-slim
 
 ARG FUEL_COMMIT=unknown

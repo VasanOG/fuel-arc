@@ -24,7 +24,7 @@ Everything below runs from the repository root. Nothing prints a key.
    fly volumes create fuel_data --region sin --size 1 --app fuel-arc-demo
    # Fuel's own keys and the token key, read from the demo's env file without echoing them:
    grep -E '^(FUEL_API_KEY|FUEL_AGENT_KEY|FUEL_TOKEN_ENCRYPTION_KEY)=' ~/.fuel-arc/fuel-arc.env | fly secrets import --app fuel-arc-demo
-   fly deploy --config deploy/fly/fly.toml --dockerfile deploy/fly/Dockerfile --ha=false --build-arg FUEL_COMMIT=$(git rev-parse --short HEAD)
+   fly deploy --ha=false --build-arg FUEL_COMMIT=$(git rev-parse --short HEAD)
    fly status --app fuel-arc-demo   # exactly ONE machine, or stop and ask why
    ```
 

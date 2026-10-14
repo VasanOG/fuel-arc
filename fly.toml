@@ -1,7 +1,8 @@
-# The Arc founder demo on Fly.io. Deploy from the repository root:
+# The Arc founder demo on Fly.io (deploy/fly/README.md). Deploy from the
+# repository root, which is the build context; the root .dockerignore is an
+# allowlist, so only the demo's code is uploaded:
 #
-#   fly deploy --config deploy/fly/fly.toml --dockerfile deploy/fly/Dockerfile \
-#     --build-arg FUEL_COMMIT=$(git rev-parse --short HEAD)
+#   fly deploy --ha=false --build-arg FUEL_COMMIT=$(git rev-parse --short HEAD)
 #
 # ONE machine, always on: deploy with `--ha=false` and check `fly status`
 # shows one. The ledger in /data is the only thing that enforces the agent's
@@ -11,7 +12,7 @@ app = "fuel-arc-demo"
 primary_region = "sin"
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = "deploy/fly/Dockerfile"
   ignorefile = ".dockerignore"
 
 [env]
