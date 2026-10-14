@@ -43,6 +43,7 @@
   .try-recent li.paid b { color: var(--paid); } .try-recent li.held b { color: var(--held); } .try-recent li.refused b { color: var(--refused); }
   .try-when { color: var(--muted); font-variant-numeric: tabular-nums; }
   .try-note { color: var(--muted); font-size:.85rem; }
+  .try-login { border-left: 3px solid var(--paid); padding-left: 12px; }
 </style>
 </head>
 <body>
@@ -74,6 +75,7 @@
   <p id="try-status" class="live-panel">Checking whether the live demo is open…</p>
   <div id="try-buttons"></div>
   <ol id="try-recent" class="try-recent"></ol>
+  <p class="try-login"><strong>See it in Fuel's own dashboard:</strong> <a href="https://fuel-arc-demo.fly.dev">fuel-arc-demo.fly.dev</a>. Sign in with company <code>default-company-neef</code>, email <code>judges@fuel.demo</code>, password <code>fuel-arc-judge-bb3ddd</code>. It is one shared operator account for judges: you can approve a held payment there (your approval is recorded under that account) and change the agent's spend cap. The hard limits in code still apply whatever you change: at most $0.01 a payment, $5 over the agent's life, and only ever to my shop.</p>
   <p class="try-note">Attempts made through this page appear above as they happen; the ledger table below is regenerated from Fuel's database and may lag behind.</p>
 </section>
 
