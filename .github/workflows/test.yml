@@ -1,0 +1,29 @@
+# Runs `npm test` on every push and pull request: the twelve steps in
+# scripts/test-steps.ts, including the Arc lock suite (scripts/verify-arc-lock.ts).
+# The suite needs no secrets, no database and no network beyond installing
+# packages, and moves no money: it builds and discards its own test databases.
+name: npm test
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: npm ci
+      - run: npm ci
+        working-directory: dashboard
+      - run: npm test
