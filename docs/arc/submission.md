@@ -1,8 +1,8 @@
-# Arc Microgrants: submission text (draft — repo link pending the owner's choice, see step below)
+# Arc Microgrants: submission text (draft)
 
 **Project:** Fuel, spend controls for AI agents, live on Arc
 **Link:** the proof page (`docs/arc/index.html`) via GitHub Pages — URL set once the repo is public
-**Repository:** pending — either `https://github.com/VasanOG/fuel` (branch `arc-mainnet`) or a fresh single-commit public copy of it (see the owner's pending choice)
+**Repository:** https://github.com/VasanOG/fuel-arc
 
 ## Short description
 
@@ -14,7 +14,7 @@ Fuel is a wallet and spend-control layer for AI agents. An agent asks Fuel to pa
 
 Every attempt lands in a ledger that rolls up into accounting exports.
 
-On Arc, one agent has made real, governed USDC payments on Arc mainnet: 9 payments, $0.022 total, each checked by every control above before it was signed — including two that were held for a person to approve and only then paid, and three that were refused outright. The public proof page lists all 13 attempts with Fuel's decision on each, and links the 9 that moved money to their transactions on Arc's explorer. When it opens, the page also re-checks both wallets and every transaction live, from the visitor's own browser, against Arc mainnet directly.
+On Arc, one agent has made real, governed USDC payments on Arc mainnet: 9 payments, $0.022 total, each checked by every control above before it was signed — including two that were held for approval, then approved with the operator key and paid, and three that were refused outright. The public proof page lists all 13 attempts with Fuel's decision on each, and links the 9 that moved money to their transactions on Arc's explorer. When it opens, the page also re-checks both wallets and every transaction live, from the visitor's own browser, against Arc mainnet directly.
 
 ## What it uses Arc for
 

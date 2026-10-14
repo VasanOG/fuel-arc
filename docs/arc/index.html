@@ -44,7 +44,7 @@
 <h2>At a glance</h2>
 <div class="facts">
   <div class="fact"><b>9</b><span>payments that moved money ($0.022 in total)</span></div>
-  <div class="fact"><b>2</b><span>held for a person to approve (2 approved and then paid)</span></div>
+  <div class="fact"><b>2</b><span>held for approval (2 then approved with the operator key and paid)</span></div>
   <div class="fact"><b>3</b><span>refused before anything was signed</span></div>
   
   <div class="fact"><b>$0.01 / $5.00</b><span>hard limits in code: per payment, and in total over the agent's life</span></div>
@@ -97,11 +97,11 @@
 <h2>Download</h2>
 <ul>
   <li><a href="proof.csv">proof.csv</a> — every row above, with the transaction hash and explorer link, built for this page.</li>
-  <li><a href="ledger-export.csv">ledger-export.csv</a> — Fuel's own accounting export, unmodified, for the same agent: no transaction hashes, wallet addresses or network names, by design (<a href="https://github.com/VasanOG/fuel/blob/main/docs/decisions/0006-accounting-export-omits-crypto-identifiers.md">ADR 0006</a>).</li>
+  <li><a href="ledger-export.csv">ledger-export.csv</a> — Fuel's own accounting export, unmodified, for the same agent: no transaction hashes, wallet addresses or network names, by design (<a href="https://github.com/VasanOG/fuel-arc/blob/main/docs/decisions/0006-accounting-export-omits-crypto-identifiers.md">ADR 0006</a>).</li>
 </ul>
 
 <h2>Source</h2>
-<p>Code: <a href="https://github.com/VasanOG/fuel">https://github.com/VasanOG/fuel</a>. The Arc pieces are <code>src/payments/arc-chain.ts</code>, <code>src/payments/arc-demo.ts</code>, <code>demo/arc-shop/</code> and <code>scripts/verify-arc-lock.ts</code>.</p>
+<p>Code: <a href="https://github.com/VasanOG/fuel-arc">https://github.com/VasanOG/fuel-arc</a>. The Arc pieces are <code>src/payments/arc-chain.ts</code>, <code>src/payments/arc-demo.ts</code>, <code>demo/arc-shop/</code> and <code>scripts/verify-arc-lock.ts</code>.</p>
 <p style="color:var(--muted);font-size:.85rem">Generated 2026-10-12 14:31:51 UTC from the demo instance's ledger and runner log. The balances and confirmations marked live are read from Arc mainnet by your browser when the page opens (https://rpc.mainnet.arc.io), not by Fuel.</p>
 </main>
 <script>
