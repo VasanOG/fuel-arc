@@ -63,6 +63,7 @@ const app = createDoorApp({
   pauseFile: process.env.TRYIT_PAUSE_FILE ?? join(dir, "tryit.paused"),
   logFile: process.env.TRYIT_LOG_FILE ?? join(dir, "tryit-log.jsonl"),
   balances: () => balances,
+  autoCompleteMs: 5_000,
   clientAddress: (req) => {
     const fly = req.headers["fly-client-ip"];
     const address = trustFly && typeof fly === "string" && fly ? fly : (req.socket.remoteAddress ?? "unknown");

@@ -42,6 +42,8 @@ export interface DoorOptions {
   clientAddress: (req: Request) => string;
   now?: () => number;
   log?: (line: string) => void;
+  /** Every this many ms, redeem holds a person has approved. Off when unset. */
+  autoCompleteMs?: number;
 }
 
 /** What the page shows for one attempt. */
@@ -218,6 +220,7 @@ export function createDoorApp(options: DoorOptions): express.Express {
     const id = req.body?.approvalRequestId;
     const item = typeof id === "string" ? held.get(id) : undefined;
     if (!item) return res.status(404).json({ error: "that is not a payment this demo is holding" });
+    if (completing.has(id as string)) return res.status(409).json({ error: "This payment is being completed right now; refresh in a few seconds." });
     const gate = admitAndLog(req, "complete", item);
     if (!gate.ok) return res.status(gate.status).json(gate.body);
 
@@ -243,26 +246,94 @@ export function createDoorApp(options: DoorOptions): express.Express {
       return res.status(409).json({ error: `The demo's approver refused: ${why}.` });
     }
 
+    const attempt = await redeem(id as string, item);
+    res.status(attempt.outcome === "failed" ? 502 : 200).json(attempt);
+  });
+
+  /**
+   * Pays a held payment with its approval: the agent "coming back" after a
+   * person approved it. Shared by the Complete button and the sweep below.
+   * The caller has already admitted it (counted on the meter, logged as
+   * forwarding).
+   */
+  async function redeem(id: string, item: TryItem): Promise<Attempt> {
     let attempt: Attempt;
     try {
-      attempt = describe("complete", item, await fuelPay(item, id as string));
+      attempt = describe("complete", item, await fuelPay(item, id));
     } catch (error) {
-      log(`[try-it] complete ${String(id)}: ${(error as Error).message}`);
+      log(`[try-it] complete ${id}: ${(error as Error).message}`);
       attempt = describe("complete", item, { status: 0, json: {} });
     }
     // Fuel may answer a completion with a NEW hold (202): track that id, and
     // keep the old one out of the map; otherwise the old id is what this
     // attempt was about, and a paid or invalid-approval answer retires it.
     if (attempt.outcome === "held" && attempt.approvalRequestId) {
-      held.delete(id as string);
+      held.delete(id);
       held.set(attempt.approvalRequestId, item);
     } else {
-      attempt.approvalRequestId = id as string;
-      if (attempt.outcome === "paid" || attempt.outcome === "refused-approval") held.delete(id as string);
+      attempt.approvalRequestId = id;
+      if (attempt.outcome === "paid" || attempt.outcome === "refused-approval") held.delete(id);
     }
     record(attempt);
-    res.status(attempt.outcome === "failed" ? 502 : 200).json(attempt);
-  });
+    return attempt;
+  }
+
+  /*
+   * THE AGENT COMES BACK BY ITSELF. A real agent whose payment was held polls
+   * its approval and, once a person approves it, pays. The demo agent does the
+   * same: every few seconds this reads each hold's approval with the AGENT key
+   * (GET /api/approvals/:id is open to it, so an agent can check its own), and
+   * redeems the ones a person has approved. It decides nothing: it never
+   * approves, and an approval it finds was made by a signed-in person in the
+   * dashboard. Each redemption passes the same gate as a button press (pause,
+   * daily cap, balances; not the per-visitor limit, since no visitor asked)
+   * and then every one of Fuel's own checks.
+   *
+   * One redemption per id at a time: `completing` keeps the sweep and a
+   * Complete press from racing each other. (Fuel itself burns an approval in
+   * the same transaction that reserves for it, so a race could not pay twice
+   * anyway; this stops it costing two attempts on the meter.)
+   */
+  const completing = new Set<string>();
+  async function sweepApproved(): Promise<number> {
+    let paid = 0;
+    for (const [id, item] of [...held]) {
+      if (completing.has(id)) continue;
+      let status: unknown;
+      try {
+        const r = await fetch(`${options.fuelUrl}/api/approvals/${id}`, { headers: { authorization: `Bearer ${options.agentKey}` }, signal: AbortSignal.timeout(10_000) });
+        if (r.status === 404) { held.delete(id); continue; }
+        if (!r.ok) continue;
+        status = ((await r.json()) as { status?: unknown }).status;
+      } catch {
+        continue;
+      }
+      if (status === "denied" || status === "expired" || status === "consumed") { held.delete(id); continue; }
+      if (status !== "approved") continue;
+      const verdict = doorVerdict({ pauseFile: options.pauseFile, forwardedTodayBaseUnits: meter.forwardedToday(now()), nextAmountBaseUnits: TRY_ITEMS[item].amountBaseUnits, balances: options.balances(), now: now() });
+      if (!verdict.open) continue;
+      completing.add(id);
+      try {
+        meter.count(TRY_ITEMS[item].amountBaseUnits, now());
+        forwarding("complete", item);
+        const attempt = await redeem(id, item);
+        if (attempt.outcome === "paid") paid += 1;
+        log(`[try-it] approved hold ${id} completed by the agent: ${attempt.outcome}`);
+      } finally {
+        completing.delete(id);
+      }
+    }
+    return paid;
+  }
+  app.locals.sweepApproved = sweepApproved;
+  if (options.autoCompleteMs) {
+    let running = false;
+    setInterval(() => {
+      if (running) return;
+      running = true;
+      sweepApproved().catch((e) => log(`[try-it] sweep failed: ${(e as Error).message}`)).finally(() => { running = false; });
+    }, options.autoCompleteMs).unref();
+  }
 
   app.get("/health", (_req, res) => res.json({ ok: true, commit: process.env.FUEL_COMMIT ?? null }));
   app.use((_req, res) => res.status(404).json({ error: "not found" }));

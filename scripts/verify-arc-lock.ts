@@ -624,9 +624,11 @@ async function main(): Promise<void> {
         asked.push({ path: req.path, auth: req.headers.authorization, body: req.body });
         res.status(payReply.status).json(payReply.json);
       });
+      const approvalById = new Map<string, { status: number; json: Record<string, unknown> }>();
       fakeFuel.get("/api/approvals/:id", (req, res) => {
         asked.push({ path: req.path, auth: req.headers.authorization, body: {} });
-        res.status(approvalReply.status).json(approvalReply.json);
+        const reply = approvalById.get(req.params.id) ?? approvalReply;
+        res.status(reply.status).json(reply.json);
       });
       let approveStatus = 200;
       fakeFuel.post("/api/approvals/:id/approve", (req, res) => {
@@ -653,8 +655,10 @@ async function main(): Promise<void> {
           clientAddress: (req) => String(req.headers["x-test-client"] ?? "anon"),
           log: () => {},
         });
+        sweep = app.locals.sweepApproved as () => Promise<number>;
         return app.listen(0, "127.0.0.1");
       };
+      let sweep: () => Promise<number> = async () => 0;
       let doorServer = openDoor();
       await new Promise((r) => doorServer.once("listening", r));
       let doorUrl = `http://127.0.0.1:${(doorServer.address() as AddressInfo).port}`;
@@ -761,6 +765,40 @@ async function main(): Promise<void> {
         const direct = await fetch(`${approverUrl}/approve`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ approvalRequestId: "not-an-id" }) });
         assertEqual(direct.status, 400, "AL-8: the approver takes an id and nothing else");
         assertEqual((await fetch(`${approverUrl}/agents`, { method: "POST" })).status, 404, "AL-8: the approver has no other route");
+
+        // The agent comes back by itself: a hold a person approved is paid by the sweep, once; nothing else is.
+        payReply = { status: 202, json: { approvalRequestId: "88888888-8888-4888-8888-888888888888", message: "held" } };
+        await call("POST", "/try/buy", { item: "unusual" }, { "x-test-client": "judge-sweep" });
+        // Every earlier test's hold is unknown to Fuel from here (404), so the sweep forgets them; only this one is real.
+        approvalReply = { status: 404, json: {} };
+        approvalById.set("88888888-8888-4888-8888-888888888888", { status: 200, json: { agentId: chainMod.MAINNET_DEMO.agentId, amountBaseUnits: "5000", status: "pending" } });
+        asked.length = 0;
+        assertEqual(await sweep(), 0, "AL-8: the sweep pays nothing while the hold is still pending");
+        assert(!asked.some((a) => a.path.endsWith("/pay") || a.path.endsWith("/approve")), "AL-8: and neither pays nor approves anything");
+        assert(asked.some((a) => a.path === "/api/approvals/88888888-8888-4888-8888-888888888888" && a.auth === "Bearer ag-test"), "AL-8: the sweep reads the approval with the agent key, never the operator key");
+        approvalById.set("88888888-8888-4888-8888-888888888888", { status: 200, json: { agentId: chainMod.MAINNET_DEMO.agentId, amountBaseUnits: "5000", status: "approved" } });
+        payReply = { status: 200, json: { paid: "0.005", transaction: `0x${"99".repeat(32)}` } };
+        writeFileSync(pauseFile, "");
+        asked.length = 0;
+        assertEqual(await sweep(), 0, "AL-8: a paused door does not complete even an approved hold");
+        assert(!asked.some((a) => a.path.endsWith("/pay")), "AL-8: nothing was paid while paused");
+        rmSync(pauseFile);
+        asked.length = 0;
+        assertEqual(await sweep(), 1, "AL-8: once a person has approved it, the sweep pays it");
+        const swept = asked.filter((a) => a.path.endsWith("/pay"));
+        assertEqual(swept.length, 1, "AL-8: exactly one payment request reached Fuel");
+        assertEqual(JSON.stringify(swept[0]!.body), JSON.stringify({ url: `${shopUrl}/item/unusual`, approvalRequestId: "88888888-8888-4888-8888-888888888888" }), "AL-8: for the held item, redeeming its approval");
+        assert(!asked.some((a) => a.path.endsWith("/approve")), "AL-8: the sweep never approves anything itself");
+        asked.length = 0;
+        assertEqual(await sweep(), 0, "AL-8: a hold the sweep paid is not paid again");
+        assertEqual((await call("POST", "/try/complete", { approvalRequestId: "88888888-8888-4888-8888-888888888888" }, { "x-test-client": "judge-sweep" })).status, 404, "AL-8: nor can it then be completed by hand");
+        payReply = { status: 202, json: { approvalRequestId: "99999999-9999-4999-8999-999999999999", message: "held" } };
+        await call("POST", "/try/buy", { item: "unusual" }, { "x-test-client": "judge-sweep2" });
+        approvalById.set("99999999-9999-4999-8999-999999999999", { status: 200, json: { agentId: chainMod.MAINNET_DEMO.agentId, amountBaseUnits: "5000", status: "denied" } });
+        asked.length = 0;
+        assertEqual(await sweep(), 0, "AL-8: a denied hold is not paid");
+        approvalById.clear();
+        assertEqual((await call("POST", "/try/complete", { approvalRequestId: "99999999-9999-4999-8999-999999999999" }, { "x-test-client": "judge-sweep2" })).status, 404, "AL-8: and the door forgets it");
 
         // The door's own stops: pause, balances, daily cap, per-visitor. Each closes before Fuel is asked.
         payReply = { status: 200, json: { paid: "0.001", transaction: `0x${"ab".repeat(32)}` } };
