@@ -16,7 +16,7 @@ The dashboard's environment badge says "Live: real money on Arc" because it is: 
 
 ## Short description (for the submission form)
 
-Fuel is a wallet and spend-control layer for AI agents. Before an agent's payment is signed, Fuel checks its caps, holds unusual amounts for a person to approve, rate-limits it, and records every decision in a ledger that exports to accounting. Here it runs live on Arc mainnet: press Buy on the proof page and a real agent pays a real shop in USDC on Arc, with Arc's USDC as both the money and the gas, settled within one x402 request. Then sign in to Fuel's dashboard to approve what it held.
+Fuel is a wallet and spend-control layer for AI agents. Before an agent's payment is signed, Fuel checks its caps, holds unusual amounts for a person to approve, rate-limits it, and records every decision in a ledger that exports to accounting. Here it runs live on Arc mainnet: press Buy on the proof page and a real agent pays a demo shop (mine) in real USDC on Arc, with Arc's USDC as both the money and the gas, settled within one x402 request. Then sign in to Fuel's dashboard to approve what it held.
 
 ## Short description, in full
 
