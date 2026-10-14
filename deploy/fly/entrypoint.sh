@@ -34,8 +34,12 @@ for v in FUEL_API_KEY FUEL_AGENT_KEY FUEL_TOKEN_ENCRYPTION_KEY TRYIT_PAUSE_FILE 
 done
 if [ "$FUEL_API_KEY" = "$FUEL_AGENT_KEY" ]; then echo "[entrypoint] the two Fuel keys are equal; not starting"; exit 1; fi
 
-# The volume is mounted root-owned; fix that here, every boot, before anything opens it.
-chown api:fuel /data && chmod 700 /data
+# The volume is mounted root-owned; fix that here, every boot, before anything
+# opens it. 711, not 700: the door (user tryit) must be able to reach its own
+# folder /data/tryit through /data, and the first safe-mode boot showed what
+# 700 does -- the door cannot stat its pause file, and (correctly) fails
+# closed as "paused". Nobody but api can list /data or read the ledger (600).
+chown api:fuel /data && chmod 711 /data
 install -d -m 700 -o tryit -g fuel /data/tryit
 # Key folders: 0700, owned by the one user that may read them (src/payments/arc-demo.ts, demo/arc-shop/server.ts check both).
 install -d -m 700 -o api -g fuel /home/api/.fuel-arc
